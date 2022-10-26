@@ -3,6 +3,8 @@ from decimal import Decimal
 import pandas as pd
 import math
 
+from pool_research.config import base0,decimal0,decimal1
+
 
 def _x96_to_decimal(number: int):
     return Decimal(number) / 2 ** 96
@@ -112,8 +114,3 @@ def fun_size(log_lq):
         return 1
     else:
         return 2
-    
-# set info!!
-decimal0 = 6  # USDC
-decimal1 = 18
-base0 = True  # tick is base on usdc?
