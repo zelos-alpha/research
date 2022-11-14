@@ -69,7 +69,7 @@ def get_tx_type(topics_str):
 def handle_event(transaction_hash, tx_type, topics_str, data_hex):
     # proprocess topics string ->topic list
     # topics_str = topics.values[0]
-    sqrtPriceX96 = receipt = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = None
+    sqrtPriceX96 = receipt = amount0 = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = liquidity = None
     topic_list = topics_str.strip("[]").replace("'", "").replace(" ", "").split("\n")
 
     # data_hex = data.values[0]
@@ -93,7 +93,7 @@ def handle_event(transaction_hash, tx_type, topics_str, data_hex):
         liquidity, amount0, amount1 = [signed_int(onedata) for onedata in split_data]
         delta_liquidity = -liquidity
 
-    elif tx_type == constants.constants.OnchainTxType.MINT:
+    elif tx_type == constants.OnchainTxType.MINT:
         # sender = topic_str_to_address(topic_list[1])
         owner = hex_to_address(topic_list[1])
         tick_lower = signed_int(topic_list[2])

@@ -1,4 +1,4 @@
-from .v1 import big_query_downloader
+import v1.big_query_downloader as big_query_downloader
 from datetime import datetime
 import time
 
