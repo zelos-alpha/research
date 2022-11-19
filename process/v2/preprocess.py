@@ -2,9 +2,9 @@ import datetime
 import glob
 import os
 from decimal import Decimal
-
+import json
 import pandas as pd
-
+import math
 import common.constants as constants
 
 
@@ -48,9 +48,9 @@ def hex_to_address(topic_str):
 
 
 def handle_proxy_event(topic_str):
-    if topic_str is None:
+    if topic_str is None or not isinstance(topic_str, str):
         return None
-    topic_list = topic_str.strip("[]").replace("'", "").replace(" ", "").split("\n")
+    topic_list = split_topic(topic_str)
     type_topic = topic_list[0]
     if len(topic_list) > 1 and (
             type_topic == constants.INCREASE_LIQUIDITY or type_topic == constants.DECREASE_LIQUIDITY or type_topic == constants.COLLECT):
@@ -59,9 +59,36 @@ def handle_proxy_event(topic_str):
         return None
 
 
-def get_tx_type(topics_str):
-    topic_list = topics_str.strip("[]").replace("'", "").replace(" ", "").split("\n")
-    type_topic = topic_list[0]
+def compare_int_with_error(a: int, b: int, error=1) -> bool:
+    return abs(a - b) <= error
+
+
+def compare_burn_data(a: str, b: str) -> bool:
+    """
+    0x0000000000000000000000000000000000000000000000000014aca30ddf7569
+      000000000000000000000000000000000000000000000000000041b051acc70d
+      0000000000000000000000000000000000000000000000000000000000000000
+
+    """
+    if len(a) != 194 or len(b) != 194:
+        return False
+    if a[0: 66] != b[0: 66]:
+        return False
+    if compare_int_with_error(int("0x" + a[66:66 + 64], 16), int("0x" + b[66:66 + 64], 16)):
+        return False
+    if compare_int_with_error(int("0x" + a[66 + 64:66 + 2 * 64], 16), int("0x" + b[66 + 64:66 + 2 * 64], 16)):
+        return False
+    return True
+
+
+def split_topic(topic: str) -> list[str]:
+    spliter = "\n" if "\n" in topic else ","
+    topic_list = topic.strip("[]").replace("'", "").replace("\"", "").replace(" ", "").split(spliter)
+    return topic_list
+
+
+def get_tx_type(topics_str: str):
+    type_topic = split_topic(topics_str)[0]
     tx_type = constants.type_dict[type_topic]
     return tx_type
 
@@ -70,7 +97,7 @@ def handle_event(transaction_hash, tx_type, topics_str, data_hex):
     # proprocess topics string ->topic list
     # topics_str = topics.values[0]
     sqrtPriceX96 = receipt = amount0 = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = liquidity = None
-    topic_list = topics_str.strip("[]").replace("'", "").replace(" ", "").split("\n")
+    topic_list = split_topic(topics_str)
 
     # data_hex = data.values[0]
 
@@ -148,7 +175,7 @@ def drop_duplicate(df: pd.Series):
             if data_is_not_empty(row.proxy_data) and row.pool_data[66:] != row.proxy_data[2:]:
                 process_duplicate_row(index, row, row_to_remove, df_count, df)
         elif row.tx_type == constants.OnchainTxType.COLLECT or row.tx_type == constants.OnchainTxType.BURN:
-            if data_is_not_empty(row.proxy_data) and row.pool_data != row.proxy_data:
+            if data_is_not_empty(row.proxy_data) and compare_burn_data(row.pool_data, row.proxy_data):
                 process_duplicate_row(index, row, row_to_remove, df_count, df)
         else:
             raise ValueError("not support tx type")
