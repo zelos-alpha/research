@@ -111,10 +111,11 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+.idea/
 # Spyder project settings
 .spyderproject
 .spyproject
+zips
 
 # Rope project settings
 .ropeproject
@@ -129,3 +130,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+data*/
+toys/
