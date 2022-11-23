@@ -47,7 +47,8 @@ def hex_to_address(topic_str):
     return "0x" + topic_str[26:]
 
 
-def handle_proxy_event(topic_str):
+def handle_proxy_event(row):
+    topic_str = row.proxy_topics
     if topic_str is None or not isinstance(topic_str, str):
         return None
     topic_list = split_topic(topic_str)
@@ -74,9 +75,9 @@ def compare_burn_data(a: str, b: str) -> bool:
         return False
     if a[0: 66] != b[0: 66]:
         return False
-    if compare_int_with_error(int("0x" + a[66:66 + 64], 16), int("0x" + b[66:66 + 64], 16)):
+    if not compare_int_with_error(int("0x" + a[66:66 + 64], 16), int("0x" + b[66:66 + 64], 16)):
         return False
-    if compare_int_with_error(int("0x" + a[66 + 64:66 + 2 * 64], 16), int("0x" + b[66 + 64:66 + 2 * 64], 16)):
+    if not compare_int_with_error(int("0x" + a[66 + 64:66 + 2 * 64], 16), int("0x" + b[66 + 64:66 + 2 * 64], 16)):
         return False
     return True
 
@@ -96,7 +97,7 @@ def get_tx_type(topics_str: str):
 def handle_event(transaction_hash, tx_type, topics_str, data_hex):
     # proprocess topics string ->topic list
     # topics_str = topics.values[0]
-    sqrtPriceX96 = receipt = amount0 = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = liquidity = None
+    sqrtPriceX96 = receipt = amount0 = amount1 = current_liquidity = current_tick = tick_lower = tick_upper = delta_liquidity = liquidity = user = None
     topic_list = split_topic(topics_str)
 
     # data_hex = data.values[0]
@@ -106,14 +107,14 @@ def handle_event(transaction_hash, tx_type, topics_str, data_hex):
     chunks = len(no_0x_data)
 
     if tx_type == constants.OnchainTxType.SWAP:
-        sender = hex_to_address(topic_list[1])
+        owner = hex_to_address(topic_list[1])
         receipt = hex_to_address(topic_list[2])
         split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
         amount0, amount1, sqrtPriceX96, current_liquidity, current_tick = [signed_int(onedata) for onedata in
                                                                            split_data]
 
     elif tx_type == constants.OnchainTxType.BURN:
-        sender = hex_to_address(topic_list[1])
+        owner = hex_to_address(topic_list[1])
         tick_lower = signed_int(topic_list[2])
         tick_upper = signed_int(topic_list[3])
         split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
@@ -121,25 +122,25 @@ def handle_event(transaction_hash, tx_type, topics_str, data_hex):
         delta_liquidity = -liquidity
 
     elif tx_type == constants.OnchainTxType.MINT:
-        # sender = topic_str_to_address(topic_list[1])
         owner = hex_to_address(topic_list[1])
         tick_lower = signed_int(topic_list[2])
         tick_upper = signed_int(topic_list[3])
         split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
-        sender = hex_to_address(split_data[0])
+        receipt = hex_to_address(split_data[0])
         liquidity, amount0, amount1 = [signed_int(onedata) for onedata in split_data[1:]]
         delta_liquidity = liquidity
 
     elif tx_type == constants.OnchainTxType.COLLECT:
+        owner = hex_to_address(topic_list[1])
         tick_lower = signed_int(topic_list[2])
         tick_upper = signed_int(topic_list[3])
         split_data = ["0x" + no_0x_data[i:i + chunk_size] for i in range(0, chunks, chunk_size)]
-        sender = hex_to_address(split_data[0])
+        receipt = hex_to_address(split_data[0])
         amount0, amount1 = [signed_int(onedata) for onedata in split_data[1:]]
 
     else:
         raise ValueError("not support tx type")
-    return sender, receipt, amount0, amount1, sqrtPriceX96, current_liquidity, \
+    return owner, receipt, amount0, amount1, sqrtPriceX96, current_liquidity, \
            current_tick, tick_lower, tick_upper, liquidity, delta_liquidity
 
 
@@ -175,7 +176,7 @@ def drop_duplicate(df: pd.Series):
             if data_is_not_empty(row.proxy_data) and row.pool_data[66:] != row.proxy_data[2:]:
                 process_duplicate_row(index, row, row_to_remove, df_count, df)
         elif row.tx_type == constants.OnchainTxType.COLLECT or row.tx_type == constants.OnchainTxType.BURN:
-            if data_is_not_empty(row.proxy_data) and compare_burn_data(row.pool_data, row.proxy_data):
+            if data_is_not_empty(row.proxy_data) and not compare_burn_data(row.pool_data, row.proxy_data):
                 process_duplicate_row(index, row, row_to_remove, df_count, df)
         else:
             raise ValueError("not support tx type")
@@ -212,7 +213,7 @@ def preprocess_one(df):
         "total_liquidity_delta"]] = df.apply(
         lambda x: handle_event(x.transaction_hash, x.tx_type, x.pool_topics, x.pool_data), axis=1, result_type="expand")
     #    block_number, block_timestamp, tx_type, transaction_hash, pool_tx_index, pool_log_index, proxy_log_index, sender, receipt, amount0, amount1, total_liquidity, total_liquidity_delta, sqrtPriceX96, current_tick, position_id, tick_lower, tick_upper, liquidity
-    df["position_id"] = df.apply(lambda x: handle_proxy_event(x.proxy_topics), axis=1)
+    df["position_id"] = df.apply(lambda x: handle_proxy_event(x), axis=1)
     df = df.drop(columns=["pool_topics", "pool_data", "proxy_topics", "key", "proxy_data"])
     df = df.sort_values(['block_number', 'pool_log_index'], ascending=[True, True])
     df[["sqrtPriceX96", "total_liquidity", "current_tick"]] = df[
@@ -230,6 +231,7 @@ def preprocess_one(df):
     df["total_liquidity"] = df.apply(lambda x: x.total_liquidity_delta + x.total_liquidity, axis=1)
     df["block_timestamp"] = df["block_timestamp"].apply(lambda x: x.split("+")[0])
     df["tx_type"] = df.apply(lambda x: x.tx_type.name, axis=1)
+
     order = ["block_number", "block_timestamp", "tx_type", "transaction_hash", "pool_tx_index", "pool_log_index",
              "proxy_log_index", "sender", "receipt", "amount0", "amount1", "total_liquidity", "total_liquidity_delta",
              "sqrtPriceX96", "current_tick", "position_id", "tick_lower", "tick_upper", "liquidity"]
