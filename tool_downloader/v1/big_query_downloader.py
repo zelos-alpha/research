@@ -6,6 +6,8 @@ import common.constants as constants
 
 def download_bigquery_pool_event_matic(contract_address: str, date_begin: datetime, date_end: datetime,
                                        data_save_path: os.path):
+    if not os.path.exists(data_save_path):
+        os.makedirs(data_save_path)
     # iter date=> call download one day => save to date by date.
     contract_address = contract_address.lower()
     date_generated = [date_begin + timedelta(days=x) for x in range(0, (date_end - date_begin).days)]
