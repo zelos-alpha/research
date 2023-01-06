@@ -42,3 +42,5 @@ if __name__ == "__main__":
     total_df = total_df[order]
 
     total_df.to_csv(f"{folder}{contract}-merged.csv", index=False)
+    total_df.to_pickle(f"{folder}{contract}-merged.pkl")
+
