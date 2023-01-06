@@ -106,6 +106,7 @@ class ReplayStrategy(Strategy):
                 # 金额都设置为0, 去除误差对收益率的影响
                 self.broker.positions[position].pending_amount0 = Decimal(0)
                 self.broker.positions[position].pending_amount1 = Decimal(0)
+                # 去除因为计算误差造成的金额特别少的头寸. 提高计算的效率
                 # if pos.liquidity < Decimal(10000):
                 #     del self.broker.positions[position]
         pass
@@ -138,7 +139,7 @@ class ReplayStrategy(Strategy):
                         ret = self.broker.collect_fee(pos,
                                                       max_collect_amount0=amount0_delta,
                                                       max_collect_amount1=amount1_delta,
-                                                      remove_dry_pool=True)
+                                                      remove_dry_pool=True) # 是否删除流动性为0的头寸.
                         self.broker.asset0.sub(amount0_delta, True)
                         self.broker.asset1.sub(amount1_delta, True)
                         removed_amount = base_amount + quote_amount * row_data.price
@@ -196,7 +197,7 @@ def run_backtest(actuator: Actuator):
     #                                            parse_dates=['block_timestamp'], dtype={
     #         'amount0': np.float64, 'amount1': np.float64,
     #     }, converters={'sqrtPriceX96': decimal_from_value, 'liquidity': decimal_from_value})
-    actual_actions = actual_actions.sort_values(["block_number", "pool_log_index"])
+    actual_actions = actual_actions.sort_values(["block_number", "pool_log_index"]) # 根据交易发生的顺序排序
 
     actuator.strategy = ReplayStrategy(actual_actions)
     start: pd.Timestamp = actual_actions["block_timestamp"].head(1).iloc[0]
