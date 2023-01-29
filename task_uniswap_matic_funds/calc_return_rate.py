@@ -138,7 +138,7 @@ class ReplayStrategy(Strategy):
                         ret = self.broker.collect_fee(pos,
                                                       max_collect_amount0=amount0_delta,
                                                       max_collect_amount1=amount1_delta,
-                                                      remove_dry_pool=True) # 是否删除流动性为0的头寸.
+                                                      remove_dry_pool=True) # delete positions whose liquidity is zero
                         self.broker.asset0.sub(amount0_delta, True)
                         self.broker.asset1.sub(amount1_delta, True)
                         removed_amount = base_amount + quote_amount * row_data.price
@@ -183,8 +183,8 @@ def print_return(data: pd.DataFrame):
     annual_return = get_annual_return(time_span_day, multiple_return)
     standard_return = (data.price.tail(1).iloc[0] - data.price.head(1).iloc[0]) / data.price.head(1).iloc[0]
     annual_standard_return = get_annual_return(time_span_day, standard_return)
-    print(f"收益率{multiple_return}, 年化收益率{annual_return}, "
-          f"基准收益率{standard_return}, 基准年化收益率{annual_standard_return}")
+    print(f"return rate: {multiple_return}, annual return rate{annual_return}, "
+          f"benchmark return rate{standard_return}, annual benchmark return rate{annual_standard_return}")
     data["return_rate_mul"] = return_rate_mul_list
     data["price_rate"] = price_rate_list
     return data
