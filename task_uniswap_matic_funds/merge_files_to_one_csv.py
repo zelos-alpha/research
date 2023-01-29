@@ -50,7 +50,7 @@ if __name__ == "__main__":
         day = day + timedelta(days=1)
     total_df: pd.DataFrame = total_df.reset_index()
     total_df = total_df.sort_values(["block_number"])
-    # 填补每天开始的时候, tick, price, sqrtPriceX96的空白.
+    # fill the blank fields (tick, price, sqrtPriceX96), when a day start, there might be no swap in first minutes. 
     last_value = {
         "tick": 0,
         "sqrt_price": 0

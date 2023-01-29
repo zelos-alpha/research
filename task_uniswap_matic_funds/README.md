@@ -1,19 +1,20 @@
-# 说明
+# README
 
-## 用途
+## Purpose
 
-计算选定的基金/地址的收益率
+Analysis on chain event of a Uniswap V3 pool. Find out active funds and address, then calculate their rate of return.
 
-## 使用步骤
+## Usage
 
-1. 使用[tool_downloader](..%2Ftool_downloader)下载数据, 按天为单位下载
-2. 使用[tool_process](..%2Ftool_process), 将数据预处理,
-3. 使用[merge_files_to_one_csv.py](merge_files_to_one_csv.py)将每天的数据, 合并到一个文件.
-4. 将合并的csv文件, 导入到mysql数据库
-5. 进行一些统计, 确定测试的目标,
+1. Download on chain event logs via [tool_downloader](..%2Ftool_downloader), you should write a simple script according to the example, and set up several parameters, such as chain, pool address, google application credentials. After download, data will be saved in files split by day.
+2. Process data via [tool_process](..%2Ftool_process), on chain trade actions will be extracted from event logs.
+3. Call [merge_files_to_one_csv.py](merge_files_to_one_csv.py)to merge all mint/burn/collect actions to one CSV file.
+4. To make the analysis easier, import the csv file to a database such as mysql. 
+5. Now the following SQL to find out active address. We choose address by sum of collect amount and collect action counts.
 
 ```sql
-# 按照质押资金量来统计
+# Statistics according to total collect amount,
+
 select st.receipt, format(st.sum_amount, 2) amount, ct.cnt
 from (select receipt, sum(amount0 / POWER(10, 6) + price * amount1 / POWER(10, 18)) sum_amount
       from polygon_usdc_weth
@@ -26,7 +27,9 @@ from (select receipt, sum(amount0 / POWER(10, 6) + price * amount1 / POWER(10, 1
       where tx_type = 'collect'
       group by receipt
       order by cnt desc) ct on st.receipt = ct.receipt
-# 按照collect次数统计
+
+# Statistics according to collect times
+
 select receipt, count(receipt) cnt
 from polygon_usdc_weth
 where tx_type = 'collect'
@@ -34,13 +37,9 @@ group by receipt
 order by cnt desc
 ```
 
-6. 确定这个地址的相关交易, 经过研究, 使用collect类型的交易来统计, 对于自己操作pool合约的投资合约, receipt是自己, 而对于操作代理合约的, 根据position_id查找就可以. 
+6. Once an address is picked. Find all relative transactions about this adress. For addresses who interact with uniswap proxy contact, we can use position id to find all relative actions. but for funds who wrote their own contract to interact with uniswap pool, their is no position id, so we have to find relative actions by transaction. 
+
 ```sql
-select *
-from polygon_usdc_weth
-where transaction_hash in (select transaction_hash
-                           from polygon_usdc_weth
-                           where receipt = '0x364d5077c4c6bce6280705fe657fc4c55fdac363')
 
 select *
 from polygon_usdc_weth
@@ -48,7 +47,15 @@ where position_id in (select position_id
                       from polygon_usdc_weth
                       where receipt = '0x28d1c71f83c1a138336f98b929bfd44e54114a8b')
 
-# 查看相关交易的sql
+select *
+from polygon_usdc_weth
+where transaction_hash in (select transaction_hash
+                           from polygon_usdc_weth
+                           where sender = '0x364d5077c4c6bce6280705fe657fc4c55fdac363')
+
+
+
+# the following sql will help you analysis actions manually.
 
 select position_id,
        block_timestamp,
@@ -70,6 +77,6 @@ order by block_number;
 
 ```
 
-7. 导出查询结果. 然后执行[calc_return_rate.py](calc_return_rate.py)
-8. 查看导出文件的收益率, 净值等. 并绘图
+7. Export the actions. then run backtest by [calc_return_rate.py](calc_return_rate.py), This script will replay the actions of a fund using demeter. 
+8. Check rate of return, net values in generated csv file.
 

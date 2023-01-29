@@ -86,9 +86,9 @@ class ReplayStrategy(Strategy):
 
     def modify_balance(self, position, price, removed):
         """
-        在collect之后, 修正.
-        1. 账户余额设置为0.
-        2. 比较移除金额和头寸剩余金额, 如果剩余金额很少. 认为这些余额是手续费计算带来的误差. 头寸剩余金额变为0
+        After collect, modify balance.
+        1. set user account balance to zero, this means user withdraw their money from borker after collect. 
+        2. compare withdraw amount and uncollected balance, if uncollected balance is much less than withdraw amount, we consider those uncollected amount is error of fee. so we set uncollect amount to zero. We do this because we don't want fee error affect net value.
         """
         self.broker.asset0.balance = Decimal(0)
         self.broker.asset1.balance = Decimal(0)
@@ -99,14 +99,13 @@ class ReplayStrategy(Strategy):
                 base_amount, quote_amount = (pos.pending_amount0, pos.pending_amount1)
             else:
                 base_amount, quote_amount = (pos.pending_amount1, pos.pending_amount0)
-            # 比较剩余金额和移除金额.
+            # compare withdraw amount and uncollect balance
             if removed == 0:
                 return
             if (base_amount + quote_amount * price) / removed < 0.005:
-                # 金额都设置为0, 去除误差对收益率的影响
                 self.broker.positions[position].pending_amount0 = Decimal(0)
                 self.broker.positions[position].pending_amount1 = Decimal(0)
-                # 去除因为计算误差造成的金额特别少的头寸. 提高计算的效率
+                # if you want to speed up backtest, uncommect this. this will remove positions whose liquidity is very low. this is introduced by fee error
                 # if pos.liquidity < Decimal(10000):
                 #     del self.broker.positions[position]
         pass
@@ -163,7 +162,7 @@ class ReplayStrategy(Strategy):
 
 
 def get_annual_return(duration_in_day, rate):
-    return (365 / Decimal(duration_in_day)) * rate  # 加入如果大于-1就强制为-1的逻辑?
+    return (365 / Decimal(duration_in_day)) * rate  
 
 
 def print_return(data: pd.DataFrame):
@@ -193,11 +192,8 @@ def print_return(data: pd.DataFrame):
 
 def run_backtest(actuator: Actuator):
     actual_actions = choose_tx_from_csv()
-    # actual_actions: pd.DataFrame = pd.read_csv(f'{config["work_folder"]}{config["user"]}.csv',
-    #                                            parse_dates=['block_timestamp'], dtype={
-    #         'amount0': np.float64, 'amount1': np.float64,
-    #     }, converters={'sqrtPriceX96': decimal_from_value, 'liquidity': decimal_from_value})
-    actual_actions = actual_actions.sort_values(["block_number", "pool_log_index"]) # 根据交易发生的顺序排序
+
+    actual_actions = actual_actions.sort_values(["block_number", "pool_log_index"])
 
     actuator.strategy = ReplayStrategy(actual_actions)
     start: pd.Timestamp = actual_actions["block_timestamp"].head(1).iloc[0]
@@ -214,6 +210,7 @@ def run_backtest(actuator: Actuator):
                              data=map(lambda d: d.to_array(), actuator.strategy.results))
     output_pd["net_values"] = actuator.account_status.net_value
     output_pd["price"] = actuator.data.price
+    # save result, if you want
     # output_pd = pd.DataFrame(index=actuator.data.index,
     #                          data={"net_values": actuator.account_status.net_value,
     #                                "return_rate": actuator.data.return_rate,
@@ -229,8 +226,7 @@ def run_backtest(actuator: Actuator):
         if first and row.liquidity != 0:
             end_index = index
             break
-    # end_num_index =  pd.Index.get_loc(output_pd.index, end_index) + 1
-    # end_index = output_pd.iloc[[end_num_index]].index[0]
+
 
     output_pd = output_pd.loc[start_index:end_index]
     output_pd.to_csv(f'{config["work_folder"]}{config["user"]}.result.csv')
@@ -239,9 +235,7 @@ def run_backtest(actuator: Actuator):
 
 def choose_tx_from_csv():
     """
-    从原始的文件获取数据行. 因为从数据库导出的数据, 精度低
-    :return:
-    :rtype:
+    read action from origial csv file. because when import csv to mysql, big integer will be converted to double. such as sqrtpricex96
     """
     choosen_tx: pd.DataFrame = pd.read_csv(f"{config['work_folder']}{config['user']}.csv")
     choosen_tx["key"] = choosen_tx.apply(lambda x: x.transaction_hash + "-" + str(x.pool_log_index), axis=1)
