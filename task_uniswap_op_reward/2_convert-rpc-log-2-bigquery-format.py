@@ -7,14 +7,17 @@ import common.constants as constants
 import common.types as comm_type
 from tool_process.v2.preprocess import compare_burn_data
 
-folder = "../data-op/"
-to_folder = "../data-op-bq/"
+folder = "/home/sun/AA-labs-FE/05_op_reward_phase2/data/"
+to_folder = "/home/sun/AA-labs-FE/05_op_reward_phase2/data-bq/"
 
 topic_dict = {
-    "0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde": "0x3067048beee31b25b2f1681f88dac838c8bba36af25bfb2b7cf7473a5847e35f", # mint
-    "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67": None, # swap
-    "0x0c396cd989a39f4459b5fa1aed6a9a8dcdbc45908acfd67e028cd568da98982c": "0x26f6a048e9138f2c0ce266f322cb99228e8d619ae2bff30c67f8dcf9d2377b4", # burn
-    "0x70935338e69775456a85ddef226c395fb668b63fa0115f5f20610b388e6ca9c0": "0x40d0efd1a53d60ecbf40971b9daf7dc90178c3aadc7aab1765632738fa8b8f01" # collect
+    "0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde": "0x3067048beee31b25b2f1681f88dac838c8bba36af25bfb2b7cf7473a5847e35f",
+    # mint
+    "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67": None,  # swap
+    "0x0c396cd989a39f4459b5fa1aed6a9a8dcdbc45908acfd67e028cd568da98982c": "0x26f6a048e9138f2c0ce266f322cb99228e8d619ae2bff30c67f8dcf9d2377b4",
+    # burn
+    "0x70935338e69775456a85ddef226c395fb668b63fa0115f5f20610b388e6ca9c0": "0x40d0efd1a53d60ecbf40971b9daf7dc90178c3aadc7aab1765632738fa8b8f01"
+    # collect
 }
 
 
@@ -29,8 +32,9 @@ def process_topic(df):
 
 
 def load_proxy_data():
-    df = pd.read_csv("../data-op/lint.csv")
-    df = pd.read_csv("../data-op/0xc36442b4a4522e871399cd717abdd847ab11fe88.csv")
+    #  headers : block_number,tx_hash,tx_index,log_index,data,topics
+    # df = pd.read_csv("../data-op/lint.csv")
+    df = pd.read_csv("/home/sun/AA-labs-FE/05_op_reward_phase2/data/0xc36442b4a4522e871399cd717abdd847ab11fe88.csv")
     df = df.set_index("tx_hash")
     df = process_topic(df)
     return df
@@ -63,13 +67,19 @@ def match_proxy_log(df: pd.DataFrame):
                     break
             else:
                 raise ValueError("not support tx type")
-    pass
+
+    if "proxy_topics" not in df.columns:
+        df["proxy_data"] = None
+        df["proxy_topics"] = None
+        df["proxy_log_index"] = None
+
+
+pass
 
 
 def format_df(df: pd.DataFrame):
     df = df.drop(["tx_type", "topics", "topic_name"], axis=1)
-    df["proxy_topics"] = df.proxy_topics.apply(lambda x:
-                                               json.loads(x) if isinstance(x, str) else x)
+    df["proxy_topics"] = df.proxy_topics.apply(lambda x: json.loads(x) if isinstance(x, str) else x)
 
     df = df.rename(columns={
         "tx_hash": "transaction_hash",
@@ -83,18 +93,14 @@ def format_df(df: pd.DataFrame):
     return df
 
 
-
-
 if __name__ == "__main__":
-    # contract = "0x03af20bdaaffb4cc0a521796a223f7d85e2aac31"
-    contract = "0x85149247691df622eaf1a8bd0cafd40bc45154a9"
-    # contract = "0xbf16ef186e715668aa29cef57e2fd7f9d48adfe6"
-    start = date(2022, 10, 10)
+    contract = "0x4a5a2a152e985078e1a4aa9c3362c412b7dd0a86"
+    start = date(2023, 1, 13)
     day = start
     proxy_data = load_proxy_data()
     print("load proxy finish")
     #         with tqdm(total=len(self._data.index), ncols=150) as pbar:
-    while day < date(2022, 11, 15):
+    while day < date(2023, 2, 9):
         logs = pd.read_csv(f"{folder}{contract}-{format_date(day)}.csv")
         logs = process_topic(logs)
         logs["tx_type"] = logs.apply(lambda x: constants.type_dict[x.topic_array[0]], axis=1)
