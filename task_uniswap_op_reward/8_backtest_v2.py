@@ -1,6 +1,6 @@
 import traceback
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Union
 
@@ -25,7 +25,7 @@ class Results:
     return_rate_with_op: Decimal
     net_value_with_op: Decimal
     share: Decimal
-    liquidity: Decimal
+    liquidity: int
     uncollect: Decimal
     balance: Decimal
 
@@ -67,13 +67,17 @@ class ReplayStrategy(Strategy):
         self._actions = self._actions.set_index('block_timestamp')
         self.results: [Results] = []
         self.net_value_before = Decimal(0)
+        self.net_value_with_op_before = Decimal(0)
 
     def before_bar(self, row_data: Union[RowData, pd.Series]):
         if row_data.row_id < 1:
             price = row_data.price
+            reward = 0
         else:
             price = self.data.get_by_cursor(-1).price
+            reward = op_reward.loc[row_data.timestamp - timedelta(minutes=1)].reward
         self.net_value_before = self.broker.get_account_status(price).net_value
+        self.net_value_with_op_before = self.net_value_before + Decimal(reward)
 
     def after_bar(self, row_data: Union[RowData, pd.Series]):
         status_after = self.broker.get_account_status(row_data.price)
@@ -84,8 +88,10 @@ class ReplayStrategy(Strategy):
         total_liq = 0
         for position in self.broker.positions.values():
             total_liq += position.liquidity
+        net_value_with_op = status_after.net_value + Decimal(op_reward.loc[row_data.timestamp].reward)
         self.results.append(
-            Results(return_rate, 0, 0, total_liq / row_data.currentLiquidity, total_liq,
+            Results(return_rate, safe_div(net_value_with_op, self.net_value_with_op_before), net_value_with_op,
+                    total_liq / row_data.currentLiquidity, total_liq,
                     status_after.base_uncollected + row_data.price * status_after.quote_uncollected,
                     status_after.base_balance + row_data.price * status_after.quote_balance))
 
@@ -119,6 +125,8 @@ class ReplayStrategy(Strategy):
         if row_data.timestamp not in self._actions.index:
             return
         current_action: pd.DataFrame = self._actions.loc[[row_data.timestamp]]
+        if row_data.timestamp == datetime(2023, 1, 4, 17, 28):
+            current_action.to_csv(f"{config['work_folder']}xxx.csv")
         for index, action in current_action.iterrows():
             amount0_delta = from_unit(action.amount0, asset0)
             amount1_delta = from_unit(action.amount1, asset1)
@@ -143,7 +151,7 @@ class ReplayStrategy(Strategy):
                         ret = self.broker.collect_fee(pos,
                                                       max_collect_amount0=amount0_delta,
                                                       max_collect_amount1=amount1_delta,
-                                                      remove_dry_pool=True)
+                                                      remove_dry_pool=False)
                         self.broker.asset0.sub(amount0_delta, True)
                         self.broker.asset1.sub(amount1_delta, True)
                         removed_amount = base_amount + quote_amount * row_data.price
@@ -241,17 +249,22 @@ def add_mint_for_null_position(actions: pd.DataFrame, broker: Broker):
 def add_column(data: pd.DataFrame):
     return_rate: pd.Series = data.return_rate
     multiple_return = 1
+    multiple_return_with_op = 1
     return_rate_mul_list = [None] * len(data.index)
+    return_rate_with_op_mul_list = [None] * len(data.index)
     price_rate_list = [None] * len(data.index)
     price_first = data.price.head(1).iloc[0]
     i = 0
     for index, row in data.iterrows():
         multiple_return *= row.return_rate
+        multiple_return_with_op *= row.return_rate_with_op
         return_rate_mul_list[i] = multiple_return
+        return_rate_with_op_mul_list[i] = multiple_return_with_op
         price_rate_list[i] = row.price / price_first
         i += 1
     data["return_rate_mul"] = return_rate_mul_list
     data["price_rate"] = price_rate_list
+    data["return_rate_with_op_mul"] = return_rate_with_op_mul_list
     return data
 
 
@@ -295,19 +308,35 @@ def run_backtest(actuator: Actuator):
 tokens = {
     "weth": TokenInfo(name="WETH", decimal=18),
     "dai": TokenInfo(name="DAI", decimal=18),
+    "usdc": TokenInfo(name="USDC", decimal=6),
+    "op": TokenInfo(name="OP", decimal=18)
+}
+pool_list = {
+    "WETH-DAI": "0x03af20bdaaffb4cc0a521796a223f7d85e2aac31",  # 0.3
+    "USDC-DAI": "0xbf16ef186e715668aa29cef57e2fd7f9d48adfe6",  # 0.01
+    "wstETH-ETH": "0x4a5a2a152e985078e1a4aa9c3362c412b7dd0a86",  # 0.05
+    # "OP-USDC": "0x1c3140ab59d6caf9fa7459c6f83d4b52ba881d36",  # 0.3
+    "OP-USDC": "0x1d751bc1a723accf1942122ca9aa82d49d08d2ae",  # 0.05
 }
 
 config = {
-    "fund": "gamma",
-    "asset0": tokens["weth"],
-    "asset1": tokens["dai"],
+    "fund": "defiedge",
+    "asset0": tokens["op"],
+    "asset1": tokens["usdc"],
     "rate": 0.05,
     "is_0_base": False,
     "work_folder": "~/AA-labs-FE/05_op_reward_phase2/data-result/",
-    "pool": "0x03af20bdaaffb4cc0a521796a223f7d85e2aac31"
+    "pool": pool_list[f'{tokens["op"].name}-{tokens["usdc"].name}']
 }
 config["name"] = f"{config['fund']}-{config['asset0'].name}-{config['asset1'].name}"
 data_path = "~/AA-labs-FE/05_op_reward_phase2/data_minute"
+
+reward_info = {
+    "total": (25000 / 4),
+    "start": datetime(2023, 1, 19, 0, 0, 0),
+    "end": datetime(2023, 2, 9, 0, 0, 0)
+}
+
 if __name__ == "__main__":
     # global various
     if config["is_0_base"]:
@@ -317,7 +346,12 @@ if __name__ == "__main__":
     asset0 = config["asset0"]
     asset1 = config["asset1"]
     pool = PoolBaseInfo(config["asset0"], config["asset1"], config["rate"], base)
-
+    op_reward: pd.DataFrame = pd.read_csv("~/AA-labs-FE/05_op_reward_phase2/data-aid/op_price_list.csv")
+    op_reward["timestamp"] = pd.to_datetime(op_reward["timestamp"])
+    op_reward.set_index("timestamp", inplace=True)
+    op_reward["reward"] = 0
+    op_reward.loc[reward_info["start"]:reward_info["end"], "reward"] = reward_info["total"] / (
+            (reward_info["end"] - reward_info["start"]).total_seconds() / 60)
     actuator = Actuator(pool, allow_negative_balance=True)
 
     # do different work
@@ -334,3 +368,5 @@ if __name__ == "__main__":
     # process_result.to_csv(f'{config["work_folder"]}{config["name"]}.result.csv')
 
     pass
+
+# 第三期的时候, 做一下op奖励,和手续费收入的占比
