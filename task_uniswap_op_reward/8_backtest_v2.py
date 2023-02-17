@@ -314,6 +314,8 @@ tokens = {
 pool_list = {
     "WETH-DAI": "0x03af20bdaaffb4cc0a521796a223f7d85e2aac31",  # 0.3
     "USDC-DAI": "0xbf16ef186e715668aa29cef57e2fd7f9d48adfe6",  # 0.01
+    # this pool is omitted, because there only a few of swap actions in this pool, so price is not accurate.
+    # plus, this is the only pool without a stable coin, so calculate it's net_value will involve external  price list.
     "wstETH-ETH": "0x4a5a2a152e985078e1a4aa9c3362c412b7dd0a86",  # 0.05
     # "OP-USDC": "0x1c3140ab59d6caf9fa7459c6f83d4b52ba881d36",  # 0.3
     "OP-USDC": "0x1d751bc1a723accf1942122ca9aa82d49d08d2ae",  # 0.05
@@ -357,15 +359,6 @@ if __name__ == "__main__":
     # do different work
 
     output_pd = run_backtest(actuator)
-
-    # bk_result = pd.read_csv(
-    #     f'{config["work_folder"]}{config["name"]}.result.csv',
-    #     parse_dates=['Unnamed: 0'])
-    # output_pd = bk_result.set_index("Unnamed: 0")
-
-    # process_result: pd.DataFrame = print_return(output_pd)
-
-    # process_result.to_csv(f'{config["work_folder"]}{config["name"]}.result.csv')
 
     pass
 
