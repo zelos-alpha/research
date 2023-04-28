@@ -56,6 +56,7 @@ def map_to_dataframe(map={}) -> pd.DataFrame:
     return pd.DataFrame(l, columns=["iv", "liquidity"])
 
 
+
 if __name__ == "__main__":
     start = date(2022, 12, 20)
     day = start

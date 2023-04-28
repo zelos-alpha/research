@@ -12,6 +12,9 @@ from task_uniswap_liquidity_iv.main import map_to_dataframe
 def format_date(ddd: date):
     return ddd.strftime("%Y-%m-%d")
 
+"""
+美化结果, 将iv和流动性的范围都用%表示. 并将iv变成范围
+"""
 
 if __name__ == "__main__":
     start = date(2022, 12, 20)
