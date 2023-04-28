@@ -285,7 +285,8 @@ def run_backtest(actuator: Actuator):
     actuator.load_data(ChainType.Optimism.name,
                        config["pool"],
                        start.to_pydatetime().date(),
-                       end.to_pydatetime().date())
+                       datetime(2023,2,8,0,0,0).date())
+                       # end.to_pydatetime().date())
     actuator.run(enable_notify=False, evaluator=[])
     actuator.output()
     output_pd = pd.DataFrame(columns=Results.names(),
@@ -322,13 +323,13 @@ pool_list = {
 }
 
 config = {
-    "fund": "defiedge",
-    "asset0": tokens["op"],
-    "asset1": tokens["usdc"],
-    "rate": 0.05,
+    "fund": "gamma",
+    "asset0": tokens["weth"],
+    "asset1": tokens["dai"],
+    "rate": 0.3,
     "is_0_base": False,
     "work_folder": "~/AA-labs-FE/05_op_reward_phase2/data-result/",
-    "pool": pool_list[f'{tokens["op"].name}-{tokens["usdc"].name}']
+    "pool": pool_list[f'{tokens["weth"].name}-{tokens["dai"].name}']
 }
 config["name"] = f"{config['fund']}-{config['asset0'].name}-{config['asset1'].name}"
 data_path = "~/AA-labs-FE/05_op_reward_phase2/data_minute"
