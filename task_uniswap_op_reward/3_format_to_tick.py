@@ -10,15 +10,14 @@ def format_date(ddd: date):
     return ddd.strftime("%Y-%m-%d")
 
 
-folder = "../data-op-bq/"
-to_folder = "../data-op-bq-tick/"
+folder = "/home/sun/AA-labs-FE/05_op_reward_phase2/data-bq/"
+to_folder = "/home/sun/AA-labs-FE/05_op_reward_phase2/data-tick/"
 contract = "0x03af20bdaaffb4cc0a521796a223f7d85e2aac31"
-# contract = "0x85149247691df622eaf1a8bd0cafd40bc45154a9"
-# contract = "0xbf16ef186e715668aa29cef57e2fd7f9d48adfe6"
+
 if __name__ == "__main__":
-    start = date(2022, 10, 26)
+    start = date(2023, 1, 4)
     day = start
-    while day < date(2022, 10, 27):
+    while day < date(2023, 2, 9):
         start_time = time.time()
         df = pd.read_csv(f"{folder}{contract}-{format_date(day)}.csv")
         new_df = preprocess.preprocess_one(df)
