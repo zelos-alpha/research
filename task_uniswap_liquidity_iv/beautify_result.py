@@ -23,7 +23,7 @@ if __name__ == "__main__":
     start_time = datetime.now()
     while day <= date(2023, 3, 20):
         day_str = format_date(day)
-        file = "./result/" + day_str + ".csv"
+        file = "./result_active/" + day_str + ".csv"
         # if day != date(2022, 12, 20):
         #     day = day + timedelta(days=1)
         #     continue

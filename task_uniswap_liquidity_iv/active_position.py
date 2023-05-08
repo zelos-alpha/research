@@ -56,29 +56,36 @@ def map_to_dataframe(map={}) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    """只统计10天之后仍然在avtive的(也就是符合10天后0点的tick)"""
+    source_path = "/data/research_data/uni/polygon/usdc_weth/tick/"
     start = date(2022, 12, 20)
     day = start
     total_df = None
     start_time = datetime.now()
     while day <= date(2023, 3, 20):
         day_str = format_date(day)
-        file = "/data/research_data/uni/polygon/usdc_weth/tick/0x45dda9cb7c25131df268515131f647d726f50608-" + day_str + ".csv"
+        file = source_path + "polygon-0x45dda9cb7c25131df268515131f647d726f50608-" + day_str + ".csv"
         # if day != date(2022, 12, 20):
         #     day = day + timedelta(days=1)
         #     continue
-
         df_iv = pd.read_csv(f"./iv_data/{day_str}.csv")
+
         df = pd.read_csv(file)
+        day10_df = pd.read_csv(source_path + "polygon-0x45dda9cb7c25131df268515131f647d726f50608-" + format_date(day + timedelta(days=10)) + ".csv")
+        day10_first_swap = day10_df[day10_df.tx_type == "SWAP"].head(1)
+        day10_tick = day10_first_swap["current_tick"].iloc[0]
         mints = df[df.tx_type == "MINT"]
 
         print(day, len(mints.index))
         iv_liquidity = {}
         for index, row in mints.iterrows():
+            if not row.tick_lower <= day10_tick <= row.tick_upper:
+                continue
             iv = find_iv(df_iv, row.tick_lower, row.tick_upper)
             if iv not in iv_liquidity:
                 iv_liquidity[iv] = 0
             iv_liquidity[iv] += int(row.liquidity)
             # print(row.tick_lower, row.tick_upper, row.liquidity, iv)
         df_result = map_to_dataframe(iv_liquidity)
-        df_result.to_csv(os.path.join("./result", day_str + ".csv"), index=False, header=True)
+        df_result.to_csv(os.path.join("./result_active", day_str + ".csv"), index=False, header=True)
         day = day + timedelta(days=1)
