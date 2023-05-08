@@ -1,6 +1,5 @@
 import os.path
 from datetime import date, datetime, timedelta
-from decimal import Decimal
 
 import pandas as pd
 import math
@@ -56,7 +55,6 @@ def map_to_dataframe(map={}) -> pd.DataFrame:
     return pd.DataFrame(l, columns=["iv", "liquidity"])
 
 
-
 if __name__ == "__main__":
     start = date(2022, 12, 20)
     day = start
@@ -70,9 +68,6 @@ if __name__ == "__main__":
         #     continue
 
         df_iv = pd.read_csv(f"./iv_data/{day_str}.csv")
-        df_tick = pd.read_csv(f"./iv_tick_with_tick/{day_str}.csv")
-        df_iv["upper_tick"] = df_tick["upper_tick"]
-        df_iv["lower_tick"] = df_tick["lower_tick"]
         df = pd.read_csv(file)
         mints = df[df.tx_type == "MINT"]
 
