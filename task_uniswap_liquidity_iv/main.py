@@ -18,6 +18,9 @@ def fill_nan(a, b):
 
 
 def find_iv(df_iv: pd.DataFrame, lower_tick: int, upper_tick: int):
+    """
+    找到对于指定tick(lower, upper), 在df_iv中, 最接近的四个组合的平均iv
+    """
     df_iv["upper_diff"] = df_iv["upper_tick"] - upper_tick
     df_iv["lower_diff"] = df_iv["lower_tick"] - lower_tick
     upper_max = df_iv["upper_diff"].loc[lambda x: x >= 0].min() + upper_tick
