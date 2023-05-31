@@ -21,6 +21,7 @@ if __name__ == "__main__":
     log_addr = sys.argv[1]
     logs = pd.read_csv(f"./{log_addr}.log.csv")
     # logs: pd.DataFrame = logs.loc[logs.topic0 == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef']
+    logs = logs[logs["address"] == log_addr]
     logs["from"] = logs.apply(lambda x: to_addr(x["topic1"]), axis=1)
     logs["to"] = logs.apply(lambda x: to_addr(x["topic2"]), axis=1)
     logs["value"] = logs.apply(lambda x: to_value(x["data"]), axis=1)
