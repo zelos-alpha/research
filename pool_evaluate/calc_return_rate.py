@@ -199,7 +199,7 @@ def fill_net_value(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def get_return_return(df: pd.DataFrame) -> pd.DataFrame:
+def get_return_rate(df: pd.DataFrame) -> pd.DataFrame:
     df["net_value_with_pre_l"] = df.net_value_with_pre_l.shift(-1)
     df["return_rate"] = df["net_value_with_pre_l"] / df["net_value"]
     df = df.drop(columns=["positions"])
@@ -224,5 +224,5 @@ if __name__ == "__main__":
         df = pd.DataFrame(balance)
         df = fill_price(df)
         df = fill_net_value(df)
-        df = get_return_return(df)
+        df = get_return_rate(df)
         print(df)
