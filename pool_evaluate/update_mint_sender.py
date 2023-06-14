@@ -17,10 +17,10 @@ if __name__ == "__main__":
 
     transfers = pd.read_csv("/data/research_data/uni/polygon/matic-proxy-transfer/joined.csv", engine="pyarrow", dtype_backend="pyarrow")
 
-    start = date(2023, 5, 30)
+    start = date(2021, 12, 26)
     day = start
 
-    while day <= date(2023, 5, 30):
+    while day <= date(2021, 12, 26):
         day_str = format_date(day)
         start_time = time.time()
 

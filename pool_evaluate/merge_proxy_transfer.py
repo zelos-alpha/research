@@ -1,7 +1,7 @@
 import json
 import os
 import pickle
-
+from tqdm import tqdm
 import pandas as pd
 
 """
@@ -22,13 +22,15 @@ if __name__ == "__main__":
         with open(os.path.join(path, f), "rb") as fp:
             logs = pickle.load(fp)
             all_logs.extend(logs)
+    all_txes = []
     for tl in all_logs:
         if "topics" in tl:
             topics = json.loads(tl["topics"])
         else:
-            continue
+            # print(tl["transaction_hash"],tl["log_index"])
+            continue # 由于原始文件被破坏造成的脏数据. 按理说不应该出现.
 
-        all_logs.append({
+        all_txes.append({
             'block_number': tl["block_number"],
             'transaction_hash': tl["transaction_hash"],
             'transaction_index': tl["transaction_index"],
@@ -37,6 +39,6 @@ if __name__ == "__main__":
             'to': str2addr(topics[2]),
             'position_id': int(topics[3], 16)
         })
-    df = pd.DataFrame(all_logs)
+    df = pd.DataFrame(all_txes)
     df = df.sort_values(["block_number", "transaction_index", "log_index"])
     df.to_csv(os.path.join(path, "joined.csv"), index=False)
