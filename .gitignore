@@ -133,3 +133,4 @@ dmypy.json
 data*/
 toys/
 .idea/
+.vscode/
