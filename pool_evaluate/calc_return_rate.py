@@ -6,33 +6,17 @@ from typing import NamedTuple, List, Tuple, Dict
 import pandas as pd
 from demeter.uniswap.helper import quote_price_to_sqrt
 from demeter.uniswap.liquitidy_math import get_sqrt_ratio_at_tick, get_amounts
-
+from .utils import Position,PositionHistory
 pd.options.display.max_columns = None
 pd.options.display.max_rows = 99999
 pd.set_option('display.width', 5000)
 pd.options.display.max_colwidth = 100
 
 """
-step3: 并行计算手续费分成, 因此跳过
-
 step4: 通过Positions, 计算Balance
 """
 
 
-class PositionHistory(NamedTuple):
-    timestamp: int  # 为了提高性能
-    blk_time: datetime  # 时间戳, 因为是用tick计算的, 所以每个swap, 会有一个timestamp
-    fee0: int
-    fee1: int
-    liquidity: int
-
-
-class Position(NamedTuple):
-    id: int | str
-    lower_tick: int
-    upper_tick: int
-    history: List[PositionHistory]
-    addr_history: List[Tuple[int | datetime, int | datetime, str]]  # 地址的变化列表, Tuple(start,end, address), start, end是左闭右开
 
 
 class UniPosition(NamedTuple):
