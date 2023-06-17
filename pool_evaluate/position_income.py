@@ -4,7 +4,7 @@ from _decimal import Decimal
 from dataclasses import dataclass
 from datetime import datetime, timedelta, date
 from typing import NamedTuple, List, Tuple, Dict
-from utils import Position, PostionManager, format_date
+from utils import Position, PostionAction, PostionManager, format_date
 from tqdm import tqdm
 import time
 import sys
@@ -15,7 +15,8 @@ step3: 计算所有swap, 会给当前的仓位带来多少手续费
 
 
 config = {
-    "path": "/data/demeter-data/matic-usdc-weth-005-tick",
+    # "path": "/data/demeter-data/matic-usdc-weth-005-tick",
+    "path": "~/data/polygon/usdc_weth-updated",
 }
 
 
@@ -65,17 +66,29 @@ def process_day(day_tx: pd.DataFrame):
                 idx, pos_in_list = find_pos_from_list(
                     current_position[tick_key], pos_key_str
                 )
+                total_liquidity = 0
                 if pos_in_list:
                     pos_in_list.liquidity += tx["liquidity"]
+                    total_liquidity = pos_in_list.liquidity
                 else:
                     current_position[tick_key].append(
                         LivePosition(
-                            pos_key_str,
-                            tick_key[0],
-                            tick_key[1],
-                            tx["liquidity"],
+                            pos_key_str, tick_key[0], tick_key[1], tx["liquidity"]
                         )
                     )
+                    total_liquidity = tx["liquidity"]
+                # history
+                pos_manager.add_position(pos_key_str, tick_key[0], tick_key[1])
+                pos_manager.add_history(
+                    pos_key_str,
+                    tx["block_timestamp"],
+                    0,
+                    0,
+                    PostionAction.mint,
+                    total_liquidity,
+                    address=tx["sender"],
+                )
+
             case "BURN":
                 tick_key = get_tick_key(tx)
                 if tick_key not in current_position:
@@ -91,6 +104,14 @@ def process_day(day_tx: pd.DataFrame):
                 else:
                     raise RuntimeError(f"Burn: {tick_key},{pos_key_str} not exist")
 
+                pos_manager.add_history(
+                    pos_key_str,
+                    tx["block_timestamp"],
+                    tx["amount0"],
+                    tx["amount1"],
+                    PostionAction.burn,
+                    Decimal(0),
+                )
             case "COLLECT":
                 tick_key = get_tick_key(tx)
                 if tick_key not in current_position:
@@ -114,6 +135,16 @@ def process_day(day_tx: pd.DataFrame):
                         del current_position[tick_key]
                 else:
                     raise RuntimeError(f"Burn: {tick_key},{pos_key_str} not exist")
+                
+                pos_manager.add_history(
+                    pos_key_str,
+                    tx["block_timestamp"],
+                    tx["amount0"], # TODO: 注意: 这里和fee是真实值, 和预估值有差距, 应该处理一下. 
+                    tx["amount1"],
+                    PostionAction.collect,
+                    Decimal(0),
+                    fee_will_append=False
+                )
             case "SWAP":
                 pass
 
@@ -148,6 +179,10 @@ if __name__ == "__main__":
                 "total_liquidity": to_decimal,
                 "liquidity": to_decimal,
             },
+            dtype={"block_timestamp": object},
+        )
+        df_tx_day["block_timestamp"] = pd.to_datetime(
+            df_tx_day["block_timestamp"], format="%Y-%m-%d %H:%M:%S"
         )
         process_day(df_tx_day)
         print(day_str, sys.getsizeof(current_position), pos_manager.get_size_str())
