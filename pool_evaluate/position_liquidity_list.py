@@ -4,25 +4,18 @@ from _decimal import Decimal
 from dataclasses import dataclass
 from datetime import datetime, timedelta, date
 from typing import List, Tuple, Dict
-from utils import format_date, config
+from utils import LivePosition, format_date, config
 from tqdm import tqdm
 import time
 import sys
 import pickle
 
 """
-step 3.1: 计算并保存所有头寸的流动性
+step 3.2: 计算并保存所有头寸的流动性
 """
 
 
-@dataclass
-class LivePosition:
-    id: str
-    lower_tick: int
-    upper_tick: int
-    liquidity: Decimal
-    amount0: Decimal = Decimal(0)
-    amount1: Decimal = Decimal(0)
+
 
 
 def to_decimal(value):

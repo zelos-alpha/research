@@ -13,7 +13,8 @@ pd.set_option('display.width', 5000)
 pd.options.display.max_colwidth = 100
 
 """
-step4: 通过Positions, 计算Balance
+step5 : 通过Positions, 计算Balance , 
+用不上. 方案变了
 """
 
 

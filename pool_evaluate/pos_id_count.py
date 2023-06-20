@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 from typing import NamedTuple, List, Tuple, Dict
 from utils import format_date
 """
-计算一共又多少position_id
+step 3.1: 计算并保存所有头寸的流动性
 """
 
 
@@ -15,9 +15,7 @@ def append_addr(l: pd.Series, attach: pd.Series):
     return pd.Series(l.unique())
 
 
-config = {
-    "path": "/data/demeter-data/matic-usdc-weth-005-tick",
-}
+
 
 if __name__ == "__main__":
     start = date(2021, 12, 20)

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
@@ -13,8 +14,9 @@ config = {
     "pool_fee_rate": Decimal(0.0005),
     "ignore_threshold_0": Decimal(1000000),  # 1u
     "ignore_threshold_1": Decimal(1000000000000000),  #  0.001 eth
-    "ignore_threshold_L": Decimal(1000000),  
+    "ignore_threshold_L": Decimal(1000000),
 }
+
 
 def format_date(ddd: date):
     return ddd.strftime("%Y-%m-%d")
@@ -47,6 +49,16 @@ class Position(NamedTuple):
     history: List[PositionHistory]
     # 地址的变化列表, Tuple(start,end, address), start, end是左闭右开
     addr_history: List[Tuple[int, int, str]]
+
+
+@dataclass
+class LivePosition:
+    id: str
+    lower_tick: int
+    upper_tick: int
+    liquidity: Decimal
+    amount0: Decimal = Decimal(0)
+    amount1: Decimal = Decimal(0)
 
 
 class PostionManager(object):

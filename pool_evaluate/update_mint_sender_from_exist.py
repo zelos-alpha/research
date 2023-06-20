@@ -5,6 +5,8 @@ import time
 from tqdm import tqdm
 
 """
+step1.1: 重复计算的时候, 由于计算一次太长, 这里用现成的结果就行
+
 """
 
 
