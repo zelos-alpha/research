@@ -5,6 +5,16 @@ import os
 import pickle
 from typing import List, NamedTuple, Tuple, Dict, List
 
+config = {
+    # "path": "/data/demeter-data/usdc_weth_1",
+    # "save_path": "/data/demeter-data/uni_replay",
+    "path": "~/data/polygon/usdc_weth_1",
+    "save_path": "/home/sun/workspace/data/uni_pool_evaluation",
+    "pool_fee_rate": Decimal(0.0005),
+    "ignore_threshold_0": Decimal(1000000),  # 1u
+    "ignore_threshold_1": Decimal(1000000000000000),  #  0.001 eth
+    "ignore_threshold_L": Decimal(1000000),  
+}
 
 def format_date(ddd: date):
     return ddd.strftime("%Y-%m-%d")

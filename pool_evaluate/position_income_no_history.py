@@ -4,7 +4,7 @@ from _decimal import Decimal
 from dataclasses import dataclass
 from datetime import datetime, timedelta, date
 from typing import NamedTuple, List, Tuple, Dict
-from utils import Position, PostionAction, PostionManager, format_date
+from utils import Position, PostionAction, PostionManager, format_date, config
 from tqdm import tqdm
 import time
 import sys
@@ -15,15 +15,7 @@ step 2.9: 在step3之前, 检查所有的position, 如果出现缺少id的positi
 """
 
 
-config = {
-    # "path": "/data/demeter-data/matic-usdc-weth-005-tick",
-    "path": "~/data/polygon/usdc_weth_1",
-    "save_path": "/home/sun/workspace/data/uni_pool_evaluation",
-    "pool_fee_rate": Decimal(0.0005),
-    "ignore_threshold_0": Decimal(100),  # 0.0001u
-    "ignore_threshold_1": Decimal(1000000000),  #  0.000000001 eth
-    "ignore_threshold_L": Decimal(10000),  
-}
+
 
 
 @dataclass
