@@ -13,7 +13,7 @@ def format_date(ddd: date):
 
 
 if __name__ == "__main__":
-    start = date(2022, 1, 28)
+    start = date(2021, 12, 20)
     day = start
 
     while day <= date(2023, 5, 30):

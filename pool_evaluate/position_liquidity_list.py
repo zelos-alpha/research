@@ -11,7 +11,7 @@ import sys
 import pickle
 
 """
-step 2.9: 计算并保存所有头寸的流动性
+step 3.1: 计算并保存所有头寸的流动性
 """
 
 
@@ -98,7 +98,7 @@ def process_day(day_tx: pd.DataFrame):
                     continue
                 if tick_key not in current_position:
                     raise RuntimeError(
-                        f"Burn: {tick_key}, {tx['transaction_hash']} not exist"
+                        f"Burn:{day_str} {tick_key}, {tx['transaction_hash']} not exist"
                     )
 
                 pos_key_str = get_pos_key(tx)
@@ -111,7 +111,7 @@ def process_day(day_tx: pd.DataFrame):
                     pos_in_list.amount1 += tx["amount1"]
                 else:
                     raise RuntimeError(
-                        f"Burn: {tick_key},{pos_key_str},{tx['transaction_hash']} not exist"
+                        f"Burn:{day_str} {tick_key},{pos_key_str},{tx['transaction_hash']} not exist"
                     )
 
             case "COLLECT":
@@ -123,7 +123,7 @@ def process_day(day_tx: pd.DataFrame):
                     continue
                 if tick_key not in current_position:
                     raise RuntimeError(
-                        f"Burn: {tick_key},{tx['transaction_hash']} not exist"
+                        f"Burn:{day_str} {tick_key},{tx['transaction_hash']} not exist"
                     )
                 pos_key_str = get_pos_key(tx)
                 idx, pos_in_list = find_pos_from_list(
@@ -134,12 +134,11 @@ def process_day(day_tx: pd.DataFrame):
                     pos_in_list.amount1 -= tx["amount1"]
                 else:
                     raise RuntimeError(
-                        f"Collect: {tick_key},{pos_key_str},{tx['transaction_hash']} not exist"
+                        f"Collect:{day_str} {tick_key},{pos_key_str},{tx['transaction_hash']} not exist"
                     )
 
             case "SWAP":
                 pass  # distribute_swap_fee(swap_tx=tx)
-
 
 
 @dataclass
@@ -166,15 +165,20 @@ def load_state():
     return runtime_var, current_position
 
 
+file_name = "positon_liuqudity.pkl"
 if __name__ == "__main__":
+    path = os.path.join(config["save_path"], file_name)
     start = date(2021, 12, 20)
     end = date(2023, 5, 30)
     day = start
-
-    current_position: Dict[Tuple[int, int], List[LivePosition]] = {}
-
-    with tqdm(total=(end-start).days, ncols=150) as pbar:
     
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            current_position = pickle.load(f)
+    else:
+        current_position: Dict[Tuple[int, int], List[LivePosition]] = {}
+    
+    with tqdm(total=(end - start).days, ncols=150) as pbar:
         while day <= end:
             timer_start = time.time()
             day_str = format_date(day)
@@ -211,11 +215,9 @@ if __name__ == "__main__":
             #     "current postions key count",
             #     len(current_position.keys()),
             # )
+            with open(path, "wb") as f:
+                pickle.dump(current_position, f)
             pbar.update()
 
-    print("finish, saving")
-    with open(os.path.join(config["save_path"],"positon_liuqudity.pkl"),"wb") as f:
-        pickle.dump(current_position,f)
-    # print(current_position, len(current_position))
 
     pass
