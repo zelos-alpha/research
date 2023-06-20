@@ -1,6 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
+import os
+import pickle
 from typing import List, NamedTuple, Tuple, Dict, List
 
 
@@ -24,7 +26,7 @@ class PositionHistory(NamedTuple):
     blk_time: datetime  # 时间戳, 因为是用tick计算的, 所以每个swap, 会有一个timestamp
     fee0: Decimal
     fee1: Decimal
-    liquidity: Decimal # 本来应该用int, 但是为了转换pandas的时候不转换为float, 用Decimal存储
+    liquidity: Decimal  # 本来应该用int, 但是为了转换pandas的时候不转换为float, 用Decimal存储
     action: PostionAction
 
 
@@ -39,21 +41,21 @@ class Position(NamedTuple):
 
 class PostionManager(object):
     def __init__(self) -> None:
-        self.__content: Dict[str, Position] = {}
+        self._content: Dict[str, Position] = {}
 
     def get_size_str(self) -> str:
         key_count = 0
         history_count = 0
-        for v in self.__content.values():
+        for v in self._content.values():
             key_count += 1
             history_count += len(v.history)
 
         return f"key count: {key_count}, value count: {history_count}"
 
     def add_position(self, id: str, lower: int, upper: int):
-        if id not in self.__content:
+        if id not in self._content:
             position = Position(id, lower, upper, [], [])
-            self.__content[id] = position
+            self._content[id] = position
 
     def add_history(
         self,
@@ -64,11 +66,11 @@ class PostionManager(object):
         action: PostionAction,
         liquidity: Decimal = Decimal(0),
         address: str = None,
-        fee_will_append=True, # fee的两个字段, 是否要叠加之前的fee
+        fee_will_append=True,  # fee的两个字段, 是否要叠加之前的fee
     ):
-        if id not in self.__content:
+        if id not in self._content:
             raise RuntimeError(f"{id} not found, call add_position first")
-        pos = self.__content[id]
+        pos = self._content[id]
 
         if not fee_will_append or len(pos.history) < 1:
             fee0 = fee0
@@ -85,5 +87,11 @@ class PostionManager(object):
         if address:
             last_idx = -1 if len(pos.addr_history) < 1 else len(pos.addr_history) - 1
             if last_idx > -1:
-                pos.addr_historyp[last_idx] = current_index
+                pos.addr_history[last_idx] = current_index
             pos.addr_history.append((current_index, 999999999999, address))
+
+    def dump_and_remove(self, save_path: str, key: str):
+        file_name = os.path.join(save_path, key + ".pkl")
+        with open(file_name, "wb") as f:
+            pickle.dump(self._content[key], f)
+        del self._content[key]

@@ -11,7 +11,7 @@ import sys
 import pickle
 
 """
-step3: 计算所有swap, 会给当前的仓位带来多少手续费
+step 2.9: 在step3之前, 检查所有的position, 如果出现缺少id的position, 使得运行失败, 则报错, 好修复数据
 """
 
 
@@ -81,9 +81,6 @@ def distribute_swap_fee(swap_tx: pd.Series):
                 fee0 = swap_tx["amount0"] * share * config["pool_fee_rate"]
             else:
                 fee1 = swap_tx["amount1"] * share * config["pool_fee_rate"]
-            pos_manager.add_history(
-                pos.id, swap_tx["block_timestamp"], fee0, fee1, PostionAction.swap
-            )
             pos.amount0 += fee0
             pos.amount1 += fee1
 
@@ -95,9 +92,6 @@ def remove_if_empty(pos_in_list_index: int, pos_in_list: LivePosition, tick_key)
         and pos_in_list.amount1 < config["ignore_threshold_1"]
     ):
         del current_position[tick_key][pos_in_list_index]
-        pos_manager.dump_and_remove(
-            os.path.join(config["save_path"], "positions"), pos_in_list.id
-        )
 
     if len(current_position[tick_key]) == 0:
         del current_position[tick_key]
@@ -115,28 +109,14 @@ def process_day(day_tx: pd.DataFrame):
                     idx, pos_in_list = find_pos_from_list(
                         current_position[tick_key], pos_key_str
                     )
-                    total_liquidity = 0
                     if pos_in_list:
                         pos_in_list.liquidity += tx["liquidity"]
-                        total_liquidity = pos_in_list.liquidity
                     else:
                         current_position[tick_key].append(
                             LivePosition(
                                 pos_key_str, tick_key[0], tick_key[1], tx["liquidity"]
                             )
                         )
-                        total_liquidity = tx["liquidity"]
-                    # history
-                    pos_manager.add_position(pos_key_str, tick_key[0], tick_key[1])
-                    pos_manager.add_history(
-                        pos_key_str,
-                        tx["block_timestamp"],
-                        0,
-                        0,
-                        PostionAction.mint,
-                        total_liquidity,
-                        address=tx["sender"],
-                    )
 
                 case "BURN":
                     tick_key = get_tick_key(tx)
@@ -145,7 +125,7 @@ def process_day(day_tx: pd.DataFrame):
                         continue
                     if tick_key not in current_position:
                         raise RuntimeError(f"Burn: {tick_key}, {tx['transaction_hash']} not exist")
-                    
+
                     pos_key_str = get_pos_key(tx)
                     idx, pos_in_list = find_pos_from_list(
                         current_position[tick_key], pos_key_str
@@ -158,14 +138,7 @@ def process_day(day_tx: pd.DataFrame):
                         raise RuntimeError(
                             f"Burn: {tick_key},{pos_key_str},{tx['transaction_hash']} not exist"
                         )
-                    pos_manager.add_history(
-                        pos_key_str,
-                        tx["block_timestamp"],
-                        tx["amount0"],
-                        tx["amount1"],
-                        PostionAction.burn,
-                        Decimal(0),
-                    )
+
                 case "COLLECT":
                     tick_key = get_tick_key(tx)
                     if tx["amount0"] < config["ignore_threshold_0"] and tx["amount1"] < config["ignore_threshold_1"]:
@@ -182,25 +155,16 @@ def process_day(day_tx: pd.DataFrame):
                     if pos_in_list:
                         pos_in_list.amount0 -= tx["amount0"]
                         pos_in_list.amount1 -= tx["amount1"]
-                        # TODO : 和自己计算的手续费比较, 如果超过太多要均摊
                     else:
                         raise RuntimeError(
                             f"Collect: {tick_key},{pos_key_str},{tx['transaction_hash']} not exist"
                         )
 
-                    pos_manager.add_history(
-                        pos_key_str,
-                        tx["block_timestamp"],
-                        tx["amount0"],  # TODO: 注意: 这里和fee是真实值, 和预估值有差距, 应该处理一下.
-                        tx["amount1"],
-                        PostionAction.collect,
-                        Decimal(0),
-                        fee_will_append=False,
-                    )
                     remove_if_empty(idx, pos_in_list, tick_key)
 
                 case "SWAP":
                     distribute_swap_fee(swap_tx=tx)
+
             pbar.update()
 
 
@@ -214,22 +178,18 @@ def save_state(runtime_var):
         pickle.dump(runtime_var, f)
     with open(os.path.join(config["save_path"], "current_positions.pkl"), "wb") as f:
         pickle.dump(current_position, f)
-    with open(os.path.join(config["save_path"], "history.pkl"), "wb") as f:
-        pickle.dump(pos_manager._content, f)
 
 
 def load_state():
     var_path = os.path.join(config["save_path"], "runtime_var.pkl")
     if not os.path.exists(var_path):
-        return None, {}, PostionManager()
+        return None, {}
     with open(var_path, "rb") as f:
         runtime_var: RuntimeVar = pickle.load(f)
     with open(os.path.join(config["save_path"], "current_positions.pkl"), "rb") as f:
         current_position = pickle.load(f)
-    with open(os.path.join(config["save_path"], "history.pkl"), "rb") as f:
-        pos_manager = PostionManager()
-        pos_manager._content = pickle.load(f)
-    return runtime_var, current_position, pos_manager
+
+    return runtime_var, current_position
 
 
 if __name__ == "__main__":
@@ -238,8 +198,7 @@ if __name__ == "__main__":
     day = start
 
     current_position: Dict[Tuple[int, int], List[LivePosition]] = {}
-    pos_manager: PostionManager = PostionManager()
-    runtime_var, current_position, pos_manager = load_state()
+    runtime_var, current_position = load_state()
     if runtime_var != None:
         day = runtime_var.current_day
     while day <= end:
@@ -277,11 +236,9 @@ if __name__ == "__main__":
             f"{timer_end - timer_start}s",
             "current postions key count",
             len(current_position.keys()),
-            "pos manager size",
-            pos_manager.get_size_str(),
         )
 
     print("")
-    # print(current_position)
+    # print(current_position, len(current_position))
 
     pass
