@@ -12,11 +12,16 @@ config = {
     "path": "~/data/polygon/usdc_weth_1",
     "save_path": "/home/sun/workspace/data/uni_pool_evaluation",
     "pool_fee_rate": Decimal(0.0005),
+    "is_0_base": True,
+    "decimal0": 6,
+    "decimal1": 18,
     "ignore_threshold_0": Decimal(1000000),  # 1u
     "ignore_threshold_1": Decimal(1000000000000000),  #  0.001 eth
     "ignore_threshold_L": Decimal(1000000),
 }
 
+def to_decimal(value):
+    return Decimal(value) if value else Decimal(0)
 
 def format_date(ddd: date):
     return ddd.strftime("%Y-%m-%d")

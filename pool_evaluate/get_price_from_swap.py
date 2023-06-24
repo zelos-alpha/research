@@ -4,6 +4,8 @@ import os
 import time
 from tqdm import tqdm
 
+from utils import to_decimal, config
+
 """
 step2.通过swap交易 获取价格序列
 """
@@ -23,11 +25,7 @@ def datetime2timestamp(dt: datetime) -> int:
     return int(dt.timestamp() * 1000)
 
 
-config = {
-    "is_0_base": True,
-    "decimal0": 6,
-    "decimal1": 18
-}
+
 
 if __name__ == "__main__":
     start = date(2021, 12, 20)
@@ -37,21 +35,24 @@ if __name__ == "__main__":
     count = 0
     end = date(2023, 5, 30)
     price_df = pd.DataFrame()
-    with tqdm(total=(end - start).days + 1, ncols=150) as pbar:
-        while day <= date(2023, 5, 30):
+    with tqdm(total=(end - start).days + 1, ncols=100) as pbar:
+        while day <= end:
             day_str = format_date(day)
-            file = os.path.join("/data/research_data/uni/polygon/usdc_weth-updated", f"polygon-0x45dda9cb7c25131df268515131f647d726f50608-{day_str}.tick.csv")
+            file = os.path.join(config["path"], f"polygon-0x45dda9cb7c25131df268515131f647d726f50608-{day_str}.tick.csv")
 
             # if day != date(2023, 5, 21):
             #     day = day + timedelta(days=1)
             #     continue
 
-            df: pd.DataFrame = pd.read_csv(file, parse_dates=['block_timestamp'])
+            df: pd.DataFrame = pd.read_csv(file, parse_dates=['block_timestamp'],converters={
+                    "total_liquidity": to_decimal,
+                })
             df = df[df["tx_type"] == "SWAP"]
             count += len(df.index)
             df["price"] = df["sqrtPriceX96"].apply(x96_sqrt_to_decimal)
+            
             day = day + timedelta(days=1)
-            tmp_price_df: pd.DataFrame = df[["block_timestamp", "price"]].copy()
+            tmp_price_df: pd.DataFrame = df[["block_timestamp", "price", "total_liquidity"]].copy()
             # tmp_price_df["timestamp"] = tmp_price_df["block_timestamp"].apply(datetime2timestamp)
             tmp_price_df = tmp_price_df.drop_duplicates(subset="block_timestamp")
 
@@ -60,5 +61,5 @@ if __name__ == "__main__":
 
     price_df: pd.DataFrame = price_df.set_index("block_timestamp")
     price_df = price_df.resample("1T").mean().ffill()
-    price_df.to_csv(os.path.join("/data/research_data/uni/polygon/usdc_weth-updated", "price.csv"), index=True)
+    price_df.to_csv(os.path.join(config["save_path"], "price.csv"), index=True)
     print(count)
