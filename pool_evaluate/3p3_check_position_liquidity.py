@@ -11,7 +11,7 @@ from tqdm import tqdm
 from utils import LivePosition, format_date, config, to_decimal
 
 """
-step 3.2: 计算并保存所有头寸的流动性(核心)
+step 3.3: 构建当前所有的position_id, 检查mint和burn的数据是否合格. 是否有缺失positon_id的情况
 """
 
 
@@ -33,7 +33,7 @@ def get_pos_key(tx: pd.Series) -> str:
 
 
 def get_tick_key(tx_row: pd.Series) -> Tuple[int, int]:
-    return (int(tx_row["tick_lower"]), int(tx_row["tick_upper"]))
+    return int(tx_row["tick_lower"]), int(tx_row["tick_upper"])
 
 
 # def distribute_swap_fee(swap_tx: pd.Series):
@@ -56,6 +56,18 @@ def get_tick_key(tx_row: pd.Series) -> Tuple[int, int]:
 #                 fee1 = swap_tx["amount1"] * share * config["pool_fee_rate"]
 #             pos.amount0 += fee0
 #             pos.amount1 += fee1
+
+def remove_if_empty(pos_in_list_index: int, pos_in_list: LivePosition, tick_key):
+    if (
+            pos_in_list.liquidity < 1000
+            # 由于这个amount不包含手续费, 所以肯定比链上collect的值少.
+            and pos_in_list.amount0 < config["ignore_threshold_0"]
+            and pos_in_list.amount1 < config["ignore_threshold_1"]
+    ):
+        del current_position[tick_key][pos_in_list_index]
+
+    if len(current_position[tick_key]) == 0:
+        del current_position[tick_key]
 
 
 def process_day(day_tx: pd.DataFrame):
@@ -122,49 +134,29 @@ def process_day(day_tx: pd.DataFrame):
                     raise RuntimeError(
                         f"Collect:{day_str} {tick_key},{pos_key_str},{tx['transaction_hash']} not exist"
                     )
-
+                # remove_if_empty(idx, pos_in_list, tick_key)
             case "SWAP":
                 pass  # distribute_swap_fee(swap_tx=tx)
 
 
-@dataclass
-class RuntimeVar:
-    current_day: datetime
 
 
-def save_state(runtime_var):
-    with open(os.path.join(config["save_path"], "runtime_var.pkl"), "wb") as f:
-        pickle.dump(runtime_var, f)
-    with open(os.path.join(config["save_path"], "current_positions.pkl"), "wb") as f:
-        pickle.dump(current_position, f)
 
 
-def load_state():
-    var_path = os.path.join(config["save_path"], "runtime_var.pkl")
-    if not os.path.exists(var_path):
-        return None, {}
-    with open(var_path, "rb") as f:
-        runtime_var: RuntimeVar = pickle.load(f)
-    with open(os.path.join(config["save_path"], "current_positions.pkl"), "rb") as f:
-        current_position = pickle.load(f)
-
-    return runtime_var, current_position
-
-
-file_name = "positon_liuqudity.pkl"
+file_name = "position_liquidity.pkl"
 if __name__ == "__main__":
-    path = os.path.join(config["save_path"], file_name)
-    start = date(2021, 12, 20)
-    end = date(2023, 5, 30)
+    result_path = os.path.join(config["save_path"], file_name)
+    start = date(2023, 6, 20)
+    end = date(2023, 6, 20)
     day = start
 
-    if os.path.exists(path):
-        with open(path, "rb") as f:
+    if os.path.exists(result_path):
+        with open(result_path, "rb") as f:
             current_position = pickle.load(f)
     else:
         current_position: Dict[Tuple[int, int], List[LivePosition]] = {}
 
-    with tqdm(total=(end - start).days, ncols=150) as pbar:
+    with tqdm(total=(end - start).days + 1, ncols=150) as pbar:
         while day <= end:
             timer_start = time.time()
             day_str = format_date(day)
@@ -201,8 +193,9 @@ if __name__ == "__main__":
             #     "current postions key count",
             #     len(current_position.keys()),
             # )
-            with open(path, "wb") as f:
+            with open(result_path, "wb") as f:
                 pickle.dump(current_position, f)
             pbar.update()
-
+    # with open(result_path, "wb") as f:
+    #     pickle.dump(current_position, f)
     pass

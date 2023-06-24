@@ -37,11 +37,11 @@ def time2timestamp(t: datetime) -> int:
     return int(t.timestamp() * 1000)
 
 
-class PostionAction(Enum):
-    mint = 1
-    burn = 2
-    collect = 3
-    swap = 4
+class PositionAction(Enum):
+    MINT = "MINT"
+    BURN = "BURN"
+    COLLECT = "COLLECT"
+    SWAP = "SWAP"
 
 
 class PositionHistory(NamedTuple):
@@ -50,9 +50,10 @@ class PositionHistory(NamedTuple):
     fee0: Decimal
     fee1: Decimal
     liquidity: Decimal  # 本来应该用int, 但是为了转换pandas的时候不转换为float, 用Decimal存储
-    action: PostionAction
+    action: PositionAction
 
 
+# 用于step4的结构, 过期了
 class Position(NamedTuple):
     id: str
     lower_tick: int
@@ -60,6 +61,21 @@ class Position(NamedTuple):
     history: List[PositionHistory]
     # 地址的变化列表, Tuple(start,end, address), start, end是左闭右开
     addr_history: List[Tuple[int, int, str]]
+
+
+@dataclass
+class PositionLiquidity:
+    id: str
+    lower_tick: int
+    upper_tick: int
+    tx_type: str
+    block_number: int
+    tx_hash: str
+    log_index: int
+    blk_time: datetime  # 时间戳, 因为是用tick计算的, 所以每个swap, 会有一个timestamp
+    liquidity: Decimal  # 本来应该用int, 但是为了转换pandas的时候不转换为float, 用Decimal存储
+    final_amount0: Decimal = Decimal(0)
+    final_amount1: Decimal = Decimal(0)
 
 
 @dataclass
@@ -72,7 +88,7 @@ class LivePosition:
     amount1: Decimal = Decimal(0)
 
 
-class PostionManager(object):
+class PositionManager(object):
     def __init__(self) -> None:
         self._content: Dict[str, Position] = {}
 
@@ -96,7 +112,7 @@ class PostionManager(object):
             blk_time: datetime,
             fee0: Decimal,
             fee1: Decimal,
-            action: PostionAction,
+            action: PositionAction,
             liquidity: Decimal = Decimal(0),
             address: str = None,
             fee_will_append=True,  # fee的两个字段, 是否要叠加之前的fee

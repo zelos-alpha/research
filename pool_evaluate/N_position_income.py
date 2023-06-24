@@ -4,7 +4,7 @@ from _decimal import Decimal
 from dataclasses import dataclass
 from datetime import datetime, timedelta, date
 from typing import NamedTuple, List, Tuple, Dict
-from utils import Position, PostionAction, PostionManager, format_date, config
+from utils import Position, PositionAction, PositionManager, format_date, config
 from tqdm import tqdm
 import time
 import sys
@@ -73,7 +73,7 @@ def distribute_swap_fee(swap_tx: pd.Series):
             else:
                 fee1 = swap_tx["amount1"] * share * config["pool_fee_rate"]
             pos_manager.add_history(
-                pos.id, swap_tx["block_timestamp"], fee0, fee1, PostionAction.swap
+                pos.id, swap_tx["block_timestamp"], fee0, fee1, PositionAction.SWAP
             )
             pos.amount0 += fee0
             pos.amount1 += fee1
@@ -124,7 +124,7 @@ def process_day(day_tx: pd.DataFrame):
                         tx["block_timestamp"],
                         0,
                         0,
-                        PostionAction.mint,
+                        PositionAction.MINT,
                         total_liquidity,
                         address=tx["sender"],
                     )
@@ -154,7 +154,7 @@ def process_day(day_tx: pd.DataFrame):
                         tx["block_timestamp"],
                         tx["amount0"],
                         tx["amount1"],
-                        PostionAction.burn,
+                        PositionAction.BURN,
                         Decimal(0),
                     )
                 case "COLLECT":
@@ -184,7 +184,7 @@ def process_day(day_tx: pd.DataFrame):
                         tx["block_timestamp"],
                         tx["amount0"],  # TODO: 注意: 这里和fee是真实值, 和预估值有差距, 应该处理一下.
                         tx["amount1"],
-                        PostionAction.collect,
+                        PositionAction.COLLECT,
                         Decimal(0),
                         fee_will_append=False,
                     )
@@ -212,13 +212,13 @@ def save_state(runtime_var):
 def load_state():
     var_path = os.path.join(config["save_path"], "runtime_var.pkl")
     if not os.path.exists(var_path):
-        return None, {}, PostionManager()
+        return None, {}, PositionManager()
     with open(var_path, "rb") as f:
         runtime_var: RuntimeVar = pickle.load(f)
     with open(os.path.join(config["save_path"], "current_positions.pkl"), "rb") as f:
         current_position = pickle.load(f)
     with open(os.path.join(config["save_path"], "history.pkl"), "rb") as f:
-        pos_manager = PostionManager()
+        pos_manager = PositionManager()
         pos_manager._content = pickle.load(f)
     return runtime_var, current_position, pos_manager
 
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     day = start
 
     current_position: Dict[Tuple[int, int], List[LivePosition]] = {}
-    pos_manager: PostionManager = PostionManager()
+    pos_manager: PositionManager = PositionManager()
     runtime_var, current_position, pos_manager = load_state()
     if runtime_var != None:
         day = runtime_var.current_day

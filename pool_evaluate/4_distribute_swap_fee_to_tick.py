@@ -10,7 +10,7 @@ import math
 from decimal import Decimal
 
 """
-step 3.3 把swap交易的手续费, 分配到tick上. (核心)
+step 4 把swap交易的手续费, 分配到tick上. (核心)
 """
 
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     day = start
     total_df = None
     start_time = datetime.now()
-    end = date(2023, 5, 30)
+    end = date(2023, 6, 20)
     price_df = pd.DataFrame()
     day_length = ((end - start).days + 1) * 1440
     tick_range_list = []

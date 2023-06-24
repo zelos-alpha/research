@@ -11,7 +11,7 @@ import sys
 import pickle
 
 """
-step 3.1: (准备工作)计算swap的所有current_tick的范围, 193013.0 208585.0
+step 3.2: (准备工作)计算swap的所有current_tick的范围, 193013.0 208585.0
 """
 
 
