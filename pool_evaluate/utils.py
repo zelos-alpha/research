@@ -9,19 +9,25 @@ from typing import List, NamedTuple, Tuple, Dict, List
 config = {
     # "path": "/data/demeter-data/usdc_weth_1",
     # "save_path": "/data/demeter-data/uni_replay",
-    "path": "~/data/polygon/usdc_weth_1",
-    "save_path": "/home/sun/workspace/data/uni_pool_evaluation",
+    # "path": "~/data/polygon/usdc_weth_1",
+    # "save_path": "/home/sun/workspace/data/uni_pool_evaluation",
+
+    "path": "/data/research_data/uni/polygon/usdc_weth_1",
+    "save_path": "/home/sun/AA-labs-FE/14_uni_pool_evaluate/data",
+
     "pool_fee_rate": Decimal(0.0005),
     "is_0_base": True,
     "decimal0": 6,
     "decimal1": 18,
     "ignore_threshold_0": Decimal(1000000),  # 1u
-    "ignore_threshold_1": Decimal(1000000000000000),  #  0.001 eth
+    "ignore_threshold_1": Decimal(1000000000000000),  # 0.001 eth
     "ignore_threshold_L": Decimal(1000000),
 }
 
+
 def to_decimal(value):
     return Decimal(value) if value else Decimal(0)
+
 
 def format_date(ddd: date):
     return ddd.strftime("%Y-%m-%d")
@@ -85,15 +91,15 @@ class PostionManager(object):
             self._content[id] = position
 
     def add_history(
-        self,
-        id: str,
-        blk_time: datetime,
-        fee0: Decimal,
-        fee1: Decimal,
-        action: PostionAction,
-        liquidity: Decimal = Decimal(0),
-        address: str = None,
-        fee_will_append=True,  # fee的两个字段, 是否要叠加之前的fee
+            self,
+            id: str,
+            blk_time: datetime,
+            fee0: Decimal,
+            fee1: Decimal,
+            action: PostionAction,
+            liquidity: Decimal = Decimal(0),
+            address: str = None,
+            fee_will_append=True,  # fee的两个字段, 是否要叠加之前的fee
     ):
         if id not in self._content:
             raise RuntimeError(f"{id} not found, call add_position first")

@@ -3,10 +3,12 @@ from datetime import date, datetime, timedelta
 import os
 import time
 
+from pool_evaluate.utils import format_date
 
-def format_date(ddd: date):
-    return ddd.strftime("%Y-%m-%d")
 
+"""
+step 3.1: (准备工作)统计流动性参与者的数量
+"""
 
 def append_addr(l: pd.Series, attach: pd.Series):
     l = pd.concat([l, attach])

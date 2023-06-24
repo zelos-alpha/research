@@ -4,17 +4,16 @@ from _decimal import Decimal
 from dataclasses import dataclass
 from datetime import datetime, timedelta, date
 from typing import NamedTuple, List, Tuple, Dict
-from utils import format_date
+from utils import format_date, config
+
 """
-step 3.1: 计算并保存所有头寸的流动性
+step 3.1: (准备工作)统计position的数量
 """
 
 
 def append_addr(l: pd.Series, attach: pd.Series):
     l = pd.concat([l, attach])
     return pd.Series(l.unique())
-
-
 
 
 if __name__ == "__main__":
@@ -41,6 +40,5 @@ if __name__ == "__main__":
         day = day + timedelta(days=1)
         print(day_str)
     print(len(senders.index))
-
 
 pass

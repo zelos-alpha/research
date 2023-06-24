@@ -1,29 +1,22 @@
-import pandas as pd
 import os.path
-from _decimal import Decimal
+import pickle
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, date
 from typing import List, Tuple, Dict
-from utils import LivePosition, format_date, config
+
+import pandas as pd
 from tqdm import tqdm
-import time
-import sys
-import pickle
+
+from utils import LivePosition, format_date, config, to_decimal
 
 """
-step 3.2: 计算并保存所有头寸的流动性
+step 3.2: 计算并保存所有头寸的流动性(核心)
 """
-
-
-
-
-
-def to_decimal(value):
-    return Decimal(value) if value else Decimal(0)
 
 
 def find_pos_from_list(
-    pos_list: List[LivePosition], key_word
+        pos_list: List[LivePosition], key_word
 ) -> Tuple[int, LivePosition | None]:
     idx = 0
     for pos in pos_list:
@@ -36,7 +29,7 @@ def find_pos_from_list(
 def get_pos_key(tx: pd.Series) -> str:
     if tx["position_id"] and not pd.isna(tx["position_id"]):
         return str(int(tx["position_id"]))
-    return f'{ tx["sender"]}-{int( tx["tick_lower"])}-{int( tx["tick_upper"])}'
+    return f'{tx["sender"]}-{int(tx["tick_lower"])}-{int(tx["tick_upper"])}'
 
 
 def get_tick_key(tx_row: pd.Series) -> Tuple[int, int]:
@@ -110,8 +103,8 @@ def process_day(day_tx: pd.DataFrame):
             case "COLLECT":
                 tick_key = get_tick_key(tx)
                 if (
-                    tx["amount0"] < config["ignore_threshold_0"]
-                    and tx["amount1"] < config["ignore_threshold_1"]
+                        tx["amount0"] < config["ignore_threshold_0"]
+                        and tx["amount1"] < config["ignore_threshold_1"]
                 ):
                     continue
                 if tick_key not in current_position:
@@ -164,13 +157,13 @@ if __name__ == "__main__":
     start = date(2021, 12, 20)
     end = date(2023, 5, 30)
     day = start
-    
+
     if os.path.exists(path):
         with open(path, "rb") as f:
             current_position = pickle.load(f)
     else:
         current_position: Dict[Tuple[int, int], List[LivePosition]] = {}
-    
+
     with tqdm(total=(end - start).days, ncols=150) as pbar:
         while day <= end:
             timer_start = time.time()
@@ -211,6 +204,5 @@ if __name__ == "__main__":
             with open(path, "wb") as f:
                 pickle.dump(current_position, f)
             pbar.update()
-
 
     pass

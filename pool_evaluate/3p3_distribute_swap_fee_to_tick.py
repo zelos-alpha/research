@@ -10,7 +10,7 @@ import math
 from decimal import Decimal
 
 """
-step 3.4 把swap交易的手续费, 分配到tick上. 
+step 3.3 把swap交易的手续费, 分配到tick上. (核心)
 """
 
 

@@ -1,16 +1,16 @@
-import pandas as pd
-from datetime import date, datetime, timedelta
 import os
 import time
+from datetime import date, timedelta
+
+import pandas as pd
 from tqdm import tqdm
+
+from utils import format_date
 
 """
 step1: 在通过proxy交易的情况下, mint的sender, 只能看到proxy合约地址, 因此需要通过proxy的nfttransfer, 查找一下sender 
 """
 
-
-def format_date(ddd: date):
-    return ddd.strftime("%Y-%m-%d")
 
 
 if __name__ == "__main__":

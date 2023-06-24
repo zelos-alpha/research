@@ -4,27 +4,21 @@ import os
 import time
 from tqdm import tqdm
 
-from utils import to_decimal, config
+from utils import to_decimal, config, format_date
 
 """
 step2.通过swap交易 获取价格序列
 """
 
 
-def format_date(ddd: date):
-    return ddd.strftime("%Y-%m-%d")
-
-
 def x96_sqrt_to_decimal(sqrt_priceX96):
     price = int(sqrt_priceX96) / 2 ** 96
-    tmp = (price ** 2) / 10 ** (config["decimal0"] - config["decimal1"])
-    return tmp if config["is_0_base"] else 1 / tmp
+    tmp = (price ** 2) * (10 ** (config["decimal0"] - config["decimal1"]))
+    return 1 / tmp if config["is_0_base"] else tmp
 
 
 def datetime2timestamp(dt: datetime) -> int:
     return int(dt.timestamp() * 1000)
-
-
 
 
 if __name__ == "__main__":
@@ -33,9 +27,9 @@ if __name__ == "__main__":
     total_df = None
     start_time = datetime.now()
     count = 0
-    end = date(2023, 5, 30)
+    end = date(2023, 6, 20)
     price_df = pd.DataFrame()
-    with tqdm(total=(end - start).days + 1, ncols=100) as pbar:
+    with tqdm(total=(end - start).days + 1, ncols=120) as pbar:
         while day <= end:
             day_str = format_date(day)
             file = os.path.join(config["path"], f"polygon-0x45dda9cb7c25131df268515131f647d726f50608-{day_str}.tick.csv")
@@ -44,13 +38,13 @@ if __name__ == "__main__":
             #     day = day + timedelta(days=1)
             #     continue
 
-            df: pd.DataFrame = pd.read_csv(file, parse_dates=['block_timestamp'],converters={
-                    "total_liquidity": to_decimal,
-                })
+            df: pd.DataFrame = pd.read_csv(file, parse_dates=['block_timestamp'], converters={
+                "total_liquidity": to_decimal,
+            })
             df = df[df["tx_type"] == "SWAP"]
             count += len(df.index)
             df["price"] = df["sqrtPriceX96"].apply(x96_sqrt_to_decimal)
-            
+
             day = day + timedelta(days=1)
             tmp_price_df: pd.DataFrame = df[["block_timestamp", "price", "total_liquidity"]].copy()
             # tmp_price_df["timestamp"] = tmp_price_df["block_timestamp"].apply(datetime2timestamp)
@@ -60,6 +54,8 @@ if __name__ == "__main__":
             pbar.update()
 
     price_df: pd.DataFrame = price_df.set_index("block_timestamp")
+    print("resampling, please wait")
     price_df = price_df.resample("1T").mean().ffill()
+    print("save file")
     price_df.to_csv(os.path.join(config["save_path"], "price.csv"), index=True)
     print(count)
