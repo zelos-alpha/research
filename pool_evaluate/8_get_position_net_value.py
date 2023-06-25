@@ -38,6 +38,8 @@ def set_in_range(v, min_v, max_v):
 
 def get_hour_fee(t: datetime, lower_tick: int, upper_tick: int):
     d = t.date()
+    if d not in day_fee_dfs:
+        return 0
     fee_df: pd.DataFrame = day_fee_dfs[d]
     fee_rows = fee_df.loc[t]
     day_min_tick = tick_range_df.loc[d]["min_tick"]
@@ -63,6 +65,10 @@ def write_empty_log(position_id):
 
 def process_one_position(param: Tuple[str, pd.DataFrame]):
     position_id, rel_actions = param
+    if os.path.exists(os.path.join(config["save_path"], f"fee_result/{position_id}.csv")):
+        return
+    if len(position_id) > 40 or int(position_id) > 30:
+        return
     mint_burn_actions = rel_actions[rel_actions["tx_type"] != "COLLECT"]
     if len(mint_burn_actions) <= 0:
         write_empty_log(position_id)
@@ -98,37 +104,39 @@ def process_one_position(param: Tuple[str, pd.DataFrame]):
             mint_burn_actions_idx += 1
         total_fee = get_hour_fee(index, lower_tick, upper_tick)
 
-        position_df.loc[index, "current_fee"] = total_fee * current_liquidity / prices_df.loc[index]["total_liquidity"]
-        position_df.loc[index, "lp_net_value"] = get_lp_net_value(
-            current_liquidity,
-            lower_tick,
-            upper_tick,
-            prices_df.loc[index]["price"],
-            int(prices_df.loc[index]["sqrtPriceX96"])
-        )
-        position_df.loc[index, "net_value_pre_hour"] = position_df.loc[index, "lp_net_value"] + current_sum_fee
+        if index in prices_df:
+            position_df.loc[index, "current_fee"] = total_fee * current_liquidity / prices_df.loc[index]["total_liquidity"]
+            position_df.loc[index, "lp_net_value"] = get_lp_net_value(
+                current_liquidity,
+                lower_tick,
+                upper_tick,
+                prices_df.loc[index]["price"],
+                int(prices_df.loc[index]["sqrtPriceX96"])
+            )
+            position_df.loc[index, "net_value_pre_hour"] = position_df.loc[index, "lp_net_value"] + current_sum_fee
 
-        # 开始叠加手续费
-        current_sum_fee += position_df.loc[index, "current_fee"]
-        position_df.loc[index, "accumulation_fee"] = current_sum_fee
+            # 开始叠加手续费
+            current_sum_fee += position_df.loc[index, "current_fee"]
+            position_df.loc[index, "accumulation_fee"] = current_sum_fee
 
-        next_lp_net_value = get_lp_net_value(
-            current_liquidity,
-            lower_tick,
-            upper_tick,
-            prices_df.loc[next_index]["price"],
-            int(prices_df.loc[next_index]["sqrtPriceX96"])
-        )
-        position_df.loc[index, "net_value_post_hour"] = next_lp_net_value + current_sum_fee
+            next_lp_net_value = get_lp_net_value(
+                current_liquidity,
+                lower_tick,
+                upper_tick,
+                prices_df.loc[next_index]["price"],
+                int(prices_df.loc[next_index]["sqrtPriceX96"])
+            )
+            position_df.loc[index, "net_value_post_hour"] = next_lp_net_value + current_sum_fee
 
-        position_df.loc[index, "total_net_value"] = position_df.loc[index, "accumulation_fee"] + position_df.loc[index, "lp_net_value"]
+            position_df.loc[index, "total_net_value"] = position_df.loc[index, "accumulation_fee"] + position_df.loc[index, "lp_net_value"]
+
     position_df["return_rate"] = position_df["net_value_post_hour"] / position_df["net_value_pre_hour"]
     position_df.to_csv(os.path.join(config["save_path"], f"fee_result/{position_id}.csv"))
 
 
 init_fee = False
 freq = "1H"
-multi_thread = True
+multi_thread = False
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -166,6 +174,7 @@ if __name__ == "__main__":
                 # if position_id != "0x1556ff873a3e0285b4615213386cd0ef67995139-202110-202510":
                 #     pbar.update()
                 #     continue
+
                 process_one_position((str(position_id), rel_actions))
                 pbar.update()
     print("exec time", time.time() - start_time)
