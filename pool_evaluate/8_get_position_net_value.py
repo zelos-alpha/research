@@ -67,8 +67,7 @@ def process_one_position(param: Tuple[str, pd.DataFrame]):
     position_id, rel_actions = param
     if os.path.exists(os.path.join(config["save_path"], f"fee_result/{position_id}.csv")):
         return
-    if len(position_id) > 40 or int(position_id) > 30:
-        return
+
     mint_burn_actions = rel_actions[rel_actions["tx_type"] != "COLLECT"]
     if len(mint_burn_actions) <= 0:
         write_empty_log(position_id)
