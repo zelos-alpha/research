@@ -8,7 +8,7 @@ from tqdm import tqdm
 from utils import format_date
 
 """
-step1: 在通过proxy交易的情况下, mint的sender, 只能看到proxy合约地址, 因此需要通过proxy的nfttransfer, 查找一下sender 
+step1: 在通过proxy交易的情况下, mint的sender, 只能看到proxy合约地址, 因此需要通过proxy的nft transfer, 查找一下sender 
 """
 
 

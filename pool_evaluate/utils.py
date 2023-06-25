@@ -5,6 +5,7 @@ from enum import Enum
 import os
 import pickle
 from typing import List, NamedTuple, Tuple, Dict, List
+import pandas as pd
 
 config = {
     # "path": "/data/demeter-data/usdc_weth_1",
@@ -35,6 +36,14 @@ def format_date(ddd: date):
 
 def time2timestamp(t: datetime) -> int:
     return int(t.timestamp() * 1000)
+
+
+def get_hour_time(t: datetime) -> datetime:
+    return datetime(t.year, t.month, t.day, t.hour)
+
+
+def get_minute_time(t: datetime) -> datetime:
+    return datetime(t.year, t.month, t.day, t.hour, t.minute)
 
 
 class PositionAction(Enum):
@@ -144,3 +153,16 @@ class PositionManager(object):
         with open(file_name, "wb") as f:
             pickle.dump(self._content[key], f)
         del self._content[key]
+
+
+def get_pos_key(tx: pd.Series) -> str:
+    if tx["position_id"] and not pd.isna(tx["position_id"]):
+        return str(int(tx["position_id"]))
+    return f'{tx["sender"]}-{int(tx["tick_lower"])}-{int(tx["tick_upper"])}'
+
+
+def get_time_index(t: datetime, freq="1T") -> int:
+    if freq == "1T":
+        return t.hour * 60 + t.minute
+    elif freq == "1H":
+        return t.hour

@@ -40,13 +40,14 @@ if __name__ == "__main__":
 
             df: pd.DataFrame = pd.read_csv(file, parse_dates=['block_timestamp'], converters={
                 "total_liquidity": to_decimal,
+                "sqrtPriceX96": to_decimal,
             })
             df = df[df["tx_type"] == "SWAP"]
             count += len(df.index)
             df["price"] = df["sqrtPriceX96"].apply(x96_sqrt_to_decimal)
 
             day = day + timedelta(days=1)
-            tmp_price_df: pd.DataFrame = df[["block_timestamp", "price", "total_liquidity"]].copy()
+            tmp_price_df: pd.DataFrame = df[["block_timestamp", "price", "total_liquidity","sqrtPriceX96"]].copy()
             # tmp_price_df["timestamp"] = tmp_price_df["block_timestamp"].apply(datetime2timestamp)
             tmp_price_df = tmp_price_df.drop_duplicates(subset="block_timestamp")
 
@@ -55,7 +56,7 @@ if __name__ == "__main__":
 
     price_df: pd.DataFrame = price_df.set_index("block_timestamp")
     print("resampling, please wait")
-    price_df = price_df.resample("1T").mean().ffill()
+    price_df = price_df.resample("1T").first().ffill()
     print("save file")
     price_df.to_csv(os.path.join(config["save_path"], "price.csv"), index=True)
     print(count)

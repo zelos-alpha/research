@@ -1,18 +1,16 @@
 import os.path
-import pickle
 import time
 from _decimal import Decimal
-from dataclasses import dataclass
-from datetime import datetime, timedelta, date
-from typing import List, Tuple, Dict
+from datetime import timedelta, date
+from typing import List, Tuple
 
 import pandas as pd
 from tqdm import tqdm
 
-from utils import format_date, config, to_decimal, PositionLiquidity, PositionAction
+from utils import format_date, config, to_decimal, PositionLiquidity, get_pos_key
 
 """
-step 3.4: 构建position的操作列表, 最终结果, 嫩够得知某个时刻某个仓位流动性是多少(重要)
+step 5: 构建position的操作列表, 最终结果, 嫩够得知某个时刻某个仓位流动性是多少(重要)
 """
 
 
@@ -37,11 +35,6 @@ def find_pos_from_list(
         idx += 1
     return -1, None
 
-
-def get_pos_key(tx: pd.Series) -> str:
-    if tx["position_id"] and not pd.isna(tx["position_id"]):
-        return str(int(tx["position_id"]))
-    return f'{tx["sender"]}-{int(tx["tick_lower"])}-{int(tx["tick_upper"])}'
 
 
 def get_tick_key(tx_row: pd.Series) -> Tuple[int, int]:
