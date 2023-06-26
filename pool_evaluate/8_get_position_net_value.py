@@ -135,7 +135,7 @@ def process_one_position(param: Tuple[str, pd.DataFrame]):
 
 init_fee = False
 freq = "1H"
-multi_thread = False
+multi_thread = True
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     current_time = datetime.combine(end + timedelta(days=1), datetime.min.time()) - timedelta(minutes=1)
     if multi_thread:
         ids = list(ids)
-        with Pool(8) as p:
+        with Pool(20) as p:
             res = list(tqdm(p.imap(process_one_position, ids), ncols=120, total=len(ids)))
     else:
         with tqdm(total=len(ids), ncols=150) as pbar:
