@@ -65,8 +65,8 @@ def write_empty_log(position_id):
 
 def process_one_position(param: Tuple[str, pd.DataFrame]):
     position_id, rel_actions = param
-    if os.path.exists(os.path.join(config["save_path"], f"fee_result/{position_id}.csv")):
-        return
+    # if os.path.exists(os.path.join(config["save_path"], f"fee_result/{position_id}.csv")):
+    #     return
 
     mint_burn_actions = rel_actions[rel_actions["tx_type"] != "COLLECT"]
     if len(mint_burn_actions) <= 0:
@@ -103,7 +103,7 @@ def process_one_position(param: Tuple[str, pd.DataFrame]):
             mint_burn_actions_idx += 1
         total_fee = get_hour_fee(index, lower_tick, upper_tick)
 
-        if index in prices_df:
+        if index in prices_df.index:
             position_df.loc[index, "current_fee"] = total_fee * current_liquidity / prices_df.loc[index]["total_liquidity"]
             position_df.loc[index, "lp_net_value"] = get_lp_net_value(
                 current_liquidity,
@@ -170,9 +170,9 @@ if __name__ == "__main__":
     else:
         with tqdm(total=len(ids), ncols=150) as pbar:
             for position_id, rel_actions in ids:
-                # if position_id != "0x1556ff873a3e0285b4615213386cd0ef67995139-202110-202510":
-                #     pbar.update()
-                #     continue
+                if position_id != "636161":
+                    pbar.update()
+                    continue
 
                 process_one_position((str(position_id), rel_actions))
                 pbar.update()
