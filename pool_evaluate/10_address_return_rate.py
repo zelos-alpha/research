@@ -41,14 +41,23 @@ def convert_one_address(param):
 
         })
     result_df = pd.DataFrame(index=address_total_rate_df.index, data=result_list)
+    result_df = result_df.resample("1H").first()
+    result_df["return_rate"] = result_df["return_rate"].fillna(1)
+    result_df["net_value"] = result_df["net_value"].fillna(0)
     result_df.to_csv(os.path.join(config["save_path"], "address_result", f"{address}.csv"))
 
+
+multi_thread = True
 
 if __name__ == "__main__":
     addr_pos = pd.read_csv(os.path.join(config["save_path"], "position_address.csv"))
     addresses = addr_pos.groupby("address")
     addresses = list(addresses)
-
-    with Pool(20) as p:
-        res = list(tqdm(p.imap(convert_one_address, addresses), ncols=120, total=len(addresses)))
-
+    if multi_thread:
+        with Pool(20) as p:
+            res = list(tqdm(p.imap(convert_one_address, addresses), ncols=120, total=len(addresses)))
+    else:
+        with tqdm(total=len(addresses), ncols=120) as pbar:
+            for a, b in addresses:
+                convert_one_address((a, b))
+                pbar.update()
