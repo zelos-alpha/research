@@ -170,9 +170,9 @@ if __name__ == "__main__":
     else:
         with tqdm(total=len(ids), ncols=150) as pbar:
             for position_id, rel_actions in ids:
-                if position_id != "636161":
-                    pbar.update()
-                    continue
+                # if position_id != "636161":
+                #     pbar.update()
+                #     continue
 
                 process_one_position((str(position_id), rel_actions))
                 pbar.update()
