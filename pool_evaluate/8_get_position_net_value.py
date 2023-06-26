@@ -67,6 +67,8 @@ def process_one_position(param: Tuple[str, pd.DataFrame]):
     position_id, rel_actions = param
     # if os.path.exists(os.path.join(config["save_path"], f"fee_result/{position_id}.csv")):
     #     return
+    # if position_id not in ['223637', '224135', '227281', '233152']:
+    #     return
 
     mint_burn_actions = rel_actions[rel_actions["tx_type"] != "COLLECT"]
     if len(mint_burn_actions) <= 0:
