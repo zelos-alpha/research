@@ -11,6 +11,7 @@ from decimal import Decimal
 
 """
 step 4 把swap交易的手续费, 分配到tick上. (核心)
+原理: 根据swap. 把手续费分配到对应的tick上. 
 """
 
 

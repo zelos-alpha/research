@@ -7,7 +7,8 @@ from tqdm import tqdm
 from utils import to_decimal, config, format_date
 
 """
-step2.通过swap交易 获取价格序列
+step2.通过swap交易 获取价格序列, 以及当前流动性
+并抽样到1分钟
 """
 
 

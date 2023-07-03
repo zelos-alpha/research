@@ -5,8 +5,11 @@ from tqdm import tqdm
 import pandas as pd
 
 """
-step0: 合并uni proxy的transfer(通过demeter-fetch的rpc下载的). 并解析成csv
+step0: 合并uniswap proxy的transfer(通过demeter-fetch的rpc下载的). 并解析成csv, 
+得到uniswap nft token转账的列表(所有pool的)
 """
+
+
 
 
 def str2addr(v: str):

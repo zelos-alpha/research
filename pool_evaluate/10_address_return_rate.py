@@ -5,6 +5,10 @@ from tqdm import tqdm
 import math
 from multiprocessing import Pool
 
+"""
+10. 计算地址的收益率
+主要工作是整合地址-头寸, 头寸-收益率
+"""
 
 def convert_one_address(param):
     address, positions = param

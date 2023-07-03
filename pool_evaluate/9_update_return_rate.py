@@ -4,7 +4,9 @@ from utils import LivePosition, format_date, config, to_decimal
 from tqdm import tqdm
 from multiprocessing import Pool
 
-
+"""
+9. 通过累乘每小时收益率, 得到当前时刻相对于起始时间的收益率
+"""
 def process_one(file):
     # if not file in ['223637.csv', '224135.csv', '227281.csv', '233152.csv']:
     #     return

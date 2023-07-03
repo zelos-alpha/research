@@ -10,7 +10,7 @@ from tqdm import tqdm
 from utils import format_date, config, to_decimal, PositionLiquidity, get_pos_key
 
 """
-step 5: 构建position的操作列表, 最终结果, 嫩够得知某个时刻某个仓位流动性是多少(重要)
+step 5: 构建position的操作列表, 包括mint, burn, collect. 然后按照position, block number的顺序来保存
 """
 
 

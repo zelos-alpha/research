@@ -12,6 +12,7 @@ from utils import LivePosition, format_date, config, to_decimal
 
 """
 step 3.3: 构建当前所有的position_id, 检查mint和burn的数据是否合格. 是否有缺失positon_id的情况
+原理: 根据lp的历史, 构建当前pool中position的情况. 如果有不合理的(position没mint, 但是有burn, 报错)
 """
 
 

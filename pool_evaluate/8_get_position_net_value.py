@@ -13,6 +13,12 @@ from demeter.uniswap.liquitidy_math import get_amounts
 
 from utils import format_date, config, to_decimal, PositionLiquidity, get_pos_key, get_minute_time, get_time_index, get_hour_time
 
+"""
+8. 获取position的净值. (重要)
+
+算法: 
+"""
+
 
 def load_fees() -> Dict[date, pd.DataFrame]:
     day = start

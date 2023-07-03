@@ -7,7 +7,7 @@ from typing import NamedTuple, List, Tuple, Dict
 from utils import format_date, config
 
 """
-step 3.1: (准备工作)统计position的数量
+step 3.1: (准备工作)统计当前pool中position的数量
 """
 
 

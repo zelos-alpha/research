@@ -5,7 +5,9 @@ import pandas as pd
 from tqdm import tqdm
 
 from utils import format_date, config, get_pos_key
-
+"""
+7 建立地址和头寸的对应关系(利用mint)
+"""
 if __name__ == "__main__":
     start = date(2021, 12, 20)
     end = date(2023, 6, 20)

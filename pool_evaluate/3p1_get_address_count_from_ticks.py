@@ -7,7 +7,7 @@ from pool_evaluate.utils import format_date
 
 
 """
-step 3.1: (准备工作)统计流动性参与者的数量
+step 3.1: (准备工作)统计lp provider的数量
 """
 
 def append_addr(l: pd.Series, attach: pd.Series):
