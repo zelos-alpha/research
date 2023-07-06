@@ -188,6 +188,8 @@ def process_one_position(param: Tuple[str, pd.DataFrame]):
         next_index = index + timedelta(hours=1)
         if next_index > last_index:
             next_index = last_index
+        if index not in prices_df.index:
+            continue
         begin_price = prices_df.loc[index]["price"]
         end_price = prices_df.loc[next_index]["price"]
 
