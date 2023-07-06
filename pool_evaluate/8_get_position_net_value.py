@@ -78,8 +78,8 @@ def write_empty_log(position_id):
 
 def process_one_position(param: Tuple[str, pd.DataFrame]):
     position_id, rel_actions = param
-    # if os.path.exists(os.path.join(config["save_path"], f"position_fee/{position_id}.csv")):
-    #     return
+    if os.path.exists(os.path.join(config["save_path"], f"position_fee/{position_id}.csv")):
+        return
     # if position_id not in ['223637', '224135', '227281', '233152']:
     #     return
     rel_actions["hour_time"] = rel_actions.apply(lambda x: get_hour_time(x["blk_time"]), axis=1)
@@ -120,6 +120,8 @@ def process_one_position(param: Tuple[str, pd.DataFrame]):
         next_index = index + timedelta(hours=1)  # 后一条数据的索引, 用于取后1小时的价格. 作为这个小时的结束价格.
         if next_index > last_index:
             next_index = last_index
+        if index not in prices_df.index:
+            continue
         begin_price = prices_df.loc[index]["price"]
         end_price = prices_df.loc[next_index]["price"]
         begin_price_x96 = int(prices_df.loc[index]["sqrtPriceX96"])
