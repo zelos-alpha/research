@@ -10,6 +10,7 @@ from multiprocessing import Pool
 主要工作是整合地址-头寸, 头寸-收益率
 """
 
+
 def convert_one_address(param):
     address, positions = param
     # if address != '0x00534d0b37ab1dd1a967230f76d001e11abbd1ff':
@@ -40,7 +41,7 @@ def convert_one_address(param):
                 positions.append(c_name)
         result_list.append({
             "net_value": net_value_sum,
-            "return_rate": total_sum / net_value_sum,
+            "return_rate": math.nan if net_value_sum == 0 else total_sum / net_value_sum,
             "positions": positions,
 
         })
