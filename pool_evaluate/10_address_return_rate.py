@@ -18,7 +18,7 @@ def convert_one_address(param):
     address_total_rate_df = pd.DataFrame()
 
     for _, position_row in positions.iterrows():
-        tmp_df = pd.read_csv(os.path.join(config["save_path"], "fee_result", f"{position_row['position']}.csv"), index_col=0, parse_dates=True)
+        tmp_df = pd.read_csv(os.path.join(config["save_path"], "position_fee", f"{position_row['position']}.csv"), index_col=0, parse_dates=True)
         part_df_nv = tmp_df[["total_net_value"]]
         part_df_rate = tmp_df[["final_return_rate"]]
         part_df_nv = part_df_nv.rename(columns={"total_net_value": position_row['position']})

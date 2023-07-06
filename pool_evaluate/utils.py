@@ -26,6 +26,20 @@ config = {
 }
 
 
+def get_value_in_base_token(amount0, amount1, price):
+    if config["is_0_base"]:
+        return amount0 + amount1 * price
+    else:
+        return amount0 * price + amount1
+
+
+def get_value_in_base_token_with_decimal(amount0, amount1, price):
+    if config["is_0_base"]:
+        return amount0 / 10 ** config["decimal0"] + amount1 / 10 ** config["decimal1"] * price
+    else:
+        return amount0 / 10 ** config["decimal0"] * price + amount1 / 10 ** config["decimal1"]
+
+
 def to_decimal(value):
     return Decimal(value) if value else Decimal(0)
 

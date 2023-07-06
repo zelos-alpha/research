@@ -36,7 +36,6 @@ def find_pos_from_list(
     return -1, None
 
 
-
 def get_tick_key(tx_row: pd.Series) -> Tuple[int, int]:
     return int(tx_row["tick_lower"]), int(tx_row["tick_upper"])
 
@@ -50,8 +49,12 @@ def process_day(day_tx: pd.DataFrame):
         match tx["tx_type"]:
             case "MINT":
                 liquidity = tx["liquidity"]
+                amount0 = tx["amount0"]
+                amount1 = tx["amount1"]
             case "BURN":
                 liquidity = Decimal(0) - tx["liquidity"]
+                amount0 = tx["amount0"]
+                amount1 = tx["amount1"]
             case "COLLECT":
                 amount0 = tx["amount0"]
                 amount1 = tx["amount1"]

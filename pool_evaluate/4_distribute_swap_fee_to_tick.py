@@ -24,25 +24,28 @@ def get_tick_index(tick, min_tick):
 
 
 def process_day_swap(df: pd.DataFrame, min_tick, max_tick):
-    arr_nv = np.zeros((1440, get_tick_width(max_tick, min_tick)))
+    arr_0 = np.zeros((1440, get_tick_width(max_tick, min_tick)))
+    arr_1 = np.zeros((1440, get_tick_width(max_tick, min_tick)))
     for index, row in df.iterrows():
         time_index = get_time_index(row["block_timestamp"])
-        price = price_df.loc[get_minute_time(row["block_timestamp"]), "price"]
+        # price = price_df.loc[get_minute_time(row["block_timestamp"]), "price"]
         if row["amount0"] > 0:
             v0 = float(config["pool_fee_rate"] * row["amount0"] / 10 ** config["decimal0"])
             v1 = 0
         else:
             v0 = 0
             v1 = float(config["pool_fee_rate"] * row["amount1"] / 10 ** config["decimal1"])
-        arr_nv[time_index][get_tick_index(row["current_tick"], min_tick)] += (v0 + v1 * price) \
-            if config["is_0_base"] else (v1 + v0 * price)
+        arr_0[time_index][get_tick_index(row["current_tick"], min_tick)] += v0
+        arr_1[time_index][get_tick_index(row["current_tick"], min_tick)] += v1
     day = df.head(1).iloc[0]["block_timestamp"].date()
     time_serial = pd.date_range(datetime.combine(day, datetime.min.time()),
                                 datetime.combine(day + timedelta(days=1), datetime.min.time()) - timedelta(minutes=1),
                                 freq="1T")
 
-    day_fee = pd.DataFrame(arr_nv, index=time_serial)
-    day_fee.to_csv(os.path.join(config["save_path"], f"fees/{day_str}.csv"))
+    day_fee_0 = pd.DataFrame(arr_0, index=time_serial)
+    day_fee_0.to_csv(os.path.join(config["save_path"], f"tick_fee/{day_str}_0.csv"))
+    day_fee_1 = pd.DataFrame(arr_1, index=time_serial)
+    day_fee_1.to_csv(os.path.join(config["save_path"], f"tick_fee/{day_str}_1.csv"))
 
 
 @dataclass
@@ -60,8 +63,8 @@ if __name__ == "__main__":
     end = date(2023, 6, 20)
     day_length = ((end - start).days + 1) * 1440
     tick_range_list = []
-    price_df = pd.read_csv("/home/sun/AA-labs-FE/14_uni_pool_evaluate/data/price.csv", parse_dates=["block_timestamp"])
-    price_df = price_df.set_index(["block_timestamp"])
+    # price_df = pd.read_csv("/home/sun/AA-labs-FE/14_uni_pool_evaluate/data/price.csv", parse_dates=["block_timestamp"])
+    # price_df = price_df.set_index(["block_timestamp"])
     with tqdm(total=(end - start).days + 1, ncols=100) as pbar:
         while day <= end:
             day_str = format_date(day)
@@ -95,5 +98,5 @@ if __name__ == "__main__":
 
     range_df = pd.DataFrame(tick_range_list)
     range_df.to_csv(
-        os.path.join(config["save_path"], "fees/swap_tick_range.csv"), index=False
+        os.path.join(config["save_path"], "tick_fee/swap_tick_range.csv"), index=False
     )

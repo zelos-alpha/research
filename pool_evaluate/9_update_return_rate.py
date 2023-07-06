@@ -10,7 +10,7 @@ from multiprocessing import Pool
 def process_one(file):
     # if not file in ['223637.csv', '224135.csv', '227281.csv', '233152.csv']:
     #     return
-    path = os.path.join(config["save_path"], f"fee_result", file)
+    path = os.path.join(config["save_path"], f"position_fee", file)
     df = pd.read_csv(path, index_col=0, parse_dates=True)
     df["final_return_rate"] = 1
     val = 1
@@ -21,6 +21,6 @@ def process_one(file):
 
 
 if __name__ == "__main__":
-    files = os.listdir(os.path.join(config["save_path"], "fee_result"))
+    files = os.listdir(os.path.join(config["save_path"], "position_fee"))
     with Pool(20) as p:
         res = list(tqdm(p.imap(process_one, files), ncols=120, total=len(files)))
