@@ -24,8 +24,8 @@ import pandas as pd
 pd.options.display.max_columns = None
 pd.set_option("display.width", 5000)
 
-H = Decimal("1.2")
-L = Decimal("0.8")
+H = Decimal("1.3")
+L = Decimal("0.7")
 AAVE_POLYGON_USDC_ALPHA = Decimal("0.8")  # polygon usdc可以贷出资金的比例, 最大是0.825. 为了防止清算, 调整成0,8
 
 
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     * 添加lp的时候, 看一下预估资金和实际的差值, 如果太大, 报警退出, 调整模型 
     * swap的手续费暂且忽略, 不过好像忽略不成.
     """
-    RUN_BACKTEST = False
+    RUN_BACKTEST = True
     if RUN_BACKTEST:
         start_date = date(2023, 8, 1)
         end_date = date(2023, 10, 1)
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         df["accum_fee0"] = actuator.strategy.fee0
         df["accum_fee1"] = actuator.strategy.fee1
         df.to_csv("./account.csv")
-        actuator.save_result(path="./", account=False, actions=True)
+        # actuator.save_result(path="./", account=False, actions=True)
 
     df = pd.read_csv("./account.csv", index_col=0, parse_dates=True)
     df["uncollected_sum"] = df["accum_fee1"] * df["price"] + df["accum_fee0"]
