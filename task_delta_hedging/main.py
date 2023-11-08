@@ -18,15 +18,15 @@ spec.loader.exec_module(foo)
 
 from demeter.aave import AaveV3Market
 from demeter.uniswap import UniV3Pool, UniLpMarket, V3CoreLib
-from demeter import ChainType, Strategy, TokenInfo, Actuator, MarketInfo, RowData, AtTimeTrigger
+from demeter import ChainType, Strategy, TokenInfo, Actuator, MarketInfo, RowData, AtTimeTrigger, MarketTypeEnum
 import pandas as pd
 
 pd.options.display.max_columns = None
 pd.set_option("display.width", 5000)
 
-H = Decimal("1.3")
-L = Decimal("0.7")
-AAVE_POLYGON_USDC_ALPHA = Decimal("0.8")  # polygon usdc可以贷出资金的比例, 最大是0.825. 为了防止清算, 调整成0,8
+H = Decimal("1.1")
+L = Decimal("0.9")
+AAVE_POLYGON_USDC_ALPHA = Decimal("0.7")  # polygon usdc可以贷出资金的比例, 最大是0.825. 为了防止清算, 调整少一点
 
 
 class DeltaHedgingStrategy(Strategy):
@@ -164,14 +164,14 @@ if __name__ == "__main__":
     * 添加lp的时候, 看一下预估资金和实际的差值, 如果太大, 报警退出, 调整模型 
     * swap的手续费暂且忽略, 不过好像忽略不成.
     """
-    RUN_BACKTEST = True
+    RUN_BACKTEST = False
     if RUN_BACKTEST:
         start_date = date(2023, 8, 1)
         end_date = date(2023, 10, 1)
         # start_date = date(2023, 8, 14)
         # end_date = date(2023, 8, 17)
         market_key_uni = MarketInfo("uni")
-        market_key_aave = MarketInfo("aave")
+        market_key_aave = MarketInfo("aave", MarketTypeEnum.aave_v3)
 
         usdc = TokenInfo(name="usdc", decimal=6, address="0x2791bca1f2de4661ed88a30c99a7a9449aa84174")  # TokenInfo(name='usdc', decimal=6)
         eth = TokenInfo(name="weth", decimal=18, address="0x7ceb23fd6bc0add59e62ac25578270cff1b9f619")  # TokenInfo(name='eth', decimal=18)
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         df["accum_fee0"] = actuator.strategy.fee0
         df["accum_fee1"] = actuator.strategy.fee1
         df.to_csv("./account.csv")
-        # actuator.save_result(path="./", account=False, actions=True)
+        actuator.save_result(path="./", account=False, actions=True)
 
     df = pd.read_csv("./account.csv", index_col=0, parse_dates=True)
     df["uncollected_sum"] = df["accum_fee1"] * df["price"] + df["accum_fee0"]
