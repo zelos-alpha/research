@@ -1,4 +1,5 @@
 import importlib.util
+import os
 import sys
 from datetime import date, datetime
 from decimal import Decimal
@@ -125,8 +126,8 @@ class DeltaHedgingStrategy(Strategy):
         self.fee1.append(mb.quote_uncollected + self.last_collect_fee1)
 
 
-def plot(balance_history_df: pd.DataFrame, net_value_columns=[]):
-    fig: Figure = plt.figure()
+def plot(balance_history_df: pd.DataFrame, net_value_columns=[], name=""):
+    fig: Figure = plt.figure(figsize=(20, 15))
     ax_value: Axes = fig.add_subplot()
     for nvc in net_value_columns:
         ax_value.plot(balance_history_df.index, balance_history_df[nvc], '-', label=nvc)
@@ -141,8 +142,16 @@ def plot(balance_history_df: pd.DataFrame, net_value_columns=[]):
     ax_price.legend(loc=0)
 
     ax_price.set_ylim(0, 1900)
-
+    mng = plt.get_current_fig_manager()
+    mng.resize(*mng.window.maxsize())
+    folder_path = os.path.join(os.getcwd(), "images")
+    if not os.path.exists(folder_path):
+        os.mkdir(folder_path)
+    name_str = "." + name if name != "" else ""
+    path = os.path.join(folder_path, f'{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}_Range{L}~{H}_alpha{AAVE_POLYGON_USDC_ALPHA}{name_str}.png')
+    plt.savefig(path)
     plt.show()
+
     pass
 
 
@@ -165,11 +174,11 @@ if __name__ == "__main__":
     * swap的手续费暂且忽略, 不过好像忽略不成.
     """
     RUN_BACKTEST = False
+    start_date = date(2023, 8, 1)
+    end_date = date(2023, 10, 1)
+    # start_date = date(2023, 8, 14)
+    # end_date = date(2023, 8, 17)
     if RUN_BACKTEST:
-        start_date = date(2023, 8, 1)
-        end_date = date(2023, 10, 1)
-        # start_date = date(2023, 8, 14)
-        # end_date = date(2023, 8, 17)
         market_key_uni = MarketInfo("uni")
         market_key_aave = MarketInfo("aave", MarketTypeEnum.aave_v3)
 
@@ -207,8 +216,8 @@ if __name__ == "__main__":
     df = pd.read_csv("./account.csv", index_col=0, parse_dates=True)
     df["uncollected_sum"] = df["accum_fee1"] * df["price"] + df["accum_fee0"]
 
-    plot(df, ["net_value", "uni_net_value", "aave_borrows_value", "aave_supplies_value"])
-    plot(df, ["uncollected_sum"])
+    plot(df, ["net_value", "uni_net_value", "aave_borrows_value", "aave_supplies_value"], "account")
+    plot(df, ["uncollected_sum"], "fee")
 '''
 绘图
 * 时间横轴
